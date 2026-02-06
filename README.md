@@ -23,7 +23,7 @@ An AI-powered personal finance assistant built with Next.js, Tambo AI, and Supab
 ### 1. Clone and install
 
 ```bash
-git clone <your-repo-url>
+git clone https://github.com/kanugurajesh/Fingenie
 cd fingenie
 npm install
 ```

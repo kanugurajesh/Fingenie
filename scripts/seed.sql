@@ -10,7 +10,14 @@
 DO $$
 DECLARE
   uid uuid := 'YOUR_USER_UUID';
+  user_email text;
 BEGIN
+
+-- Ensure profile exists (needed if you signed up before running the migration)
+SELECT email INTO user_email FROM auth.users WHERE id = uid;
+INSERT INTO public.profiles (id, email, display_name)
+VALUES (uid, user_email, split_part(user_email, '@', 1))
+ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO public.expenses (user_id, date, description, amount, category) VALUES
   (uid, '2024-01-05', 'Grocery shopping',     75.50,  'Food'),

@@ -1,6 +1,6 @@
 "use client";
 
-import { useTamboComponentState, useTamboStreamStatus } from "@tambo-ai/react";
+import { useTamboComponentState, useTamboStreamStatus, useTamboThread } from "@tambo-ai/react";
 import React from "react";
 import { z } from "zod";
 import { setBudget } from "@/services/transactions";
@@ -17,6 +17,7 @@ const BudgetForm: React.FC<BudgetFormProps> = ({
   initialAmount = 0,
 }) => {
   const { streamStatus } = useTamboStreamStatus();
+  const { sendThreadMessage } = useTamboThread();
   const [category, setCategory] = useTamboComponentState<string>("category", initialCategory, initialCategory);
   const [amount, setAmount] = useTamboComponentState<number>("amount", initialAmount, initialAmount);
   const [submitted, setSubmitted] = useTamboComponentState<boolean>("submitted", false);
@@ -47,6 +48,9 @@ const BudgetForm: React.FC<BudgetFormProps> = ({
     if (category && (amount ?? 0) > 0) {
       await setBudget({ category, amount: amount ?? 0 });
       setSubmitted(true);
+      await sendThreadMessage(
+        `Budget set: ${category} — $${(amount ?? 0).toFixed(2)} per month.`
+      );
     }
   };
 

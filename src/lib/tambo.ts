@@ -10,6 +10,8 @@
 
 import BudgetForm from "@/components/BudgetForm";
 import { budgetFormSchema } from "@/components/BudgetForm";
+import BudgetOverview from "@/components/BudgetOverview";
+import { budgetOverviewSchema } from "@/components/BudgetOverview";
 import InsightCard from "@/components/InsightCard";
 import TransactionList from "@/components/TransactionList";
 import { Graph, graphSchema } from "@/components/tambo/graph";
@@ -27,6 +29,9 @@ import {
   setBudget,
   setBudgetSchema,
   setBudgetOutputSchema,
+  getBudgetOverview,
+  getBudgetOverviewSchema,
+  budgetOverviewOutputSchema,
 } from "@/services/transactions";
 import type { TamboComponent } from "@tambo-ai/react";
 import { TamboTool } from "@tambo-ai/react";
@@ -87,6 +92,13 @@ export const tools: TamboTool[] = [
     inputSchema: setBudgetSchema,
     outputSchema: setBudgetOutputSchema,
   },
+  {
+    name: "getBudgetOverview",
+    description: "Returns a budget overview comparing budgets vs actual spending per category. Use this when the user asks for a budget overview, budget status, or wants to see how their spending compares to their budgets.",
+    tool: getBudgetOverview,
+    inputSchema: getBudgetOverviewSchema,
+    outputSchema: budgetOverviewOutputSchema,
+  },
 ];
 
 /**
@@ -137,5 +149,11 @@ export const components: TamboComponent[] = [
       ),
       title: z.string().optional().describe("Optional title for the transaction list"),
     }),
+  },
+  {
+    name: "BudgetOverview",
+    description: "A budget overview component that shows progress bars comparing actual spending against budget limits per category. Use this to display data from the getBudgetOverview tool. Shows green (<80%), orange (80-100%), and red (>100%) progress bars.",
+    component: BudgetOverview,
+    propsSchema: budgetOverviewSchema,
   },
 ];

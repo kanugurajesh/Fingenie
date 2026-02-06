@@ -245,3 +245,55 @@ export async function setBudget(input: SetBudgetInput) {
     amount: input.amount,
   };
 }
+
+// --- getBudgetOverview ---
+
+export const getBudgetOverviewSchema = z.object({
+  startDate: z.string().optional().describe("Filter expenses from this date (YYYY-MM-DD)"),
+  endDate: z.string().optional().describe("Filter expenses up to this date (YYYY-MM-DD)"),
+});
+
+export const budgetOverviewOutputSchema = z.array(
+  z.object({
+    category: z.string(),
+    budgetAmount: z.number(),
+    actualAmount: z.number(),
+    transactionCount: z.number(),
+  })
+);
+
+export type GetBudgetOverviewInput = z.infer<typeof getBudgetOverviewSchema>;
+
+export async function getBudgetOverview(input: GetBudgetOverviewInput) {
+  let filtered = [...allExpenses];
+
+  if (input.startDate) {
+    filtered = filtered.filter(exp => new Date(exp.date) >= new Date(input.startDate!));
+  }
+  if (input.endDate) {
+    filtered = filtered.filter(exp => new Date(exp.date) <= new Date(input.endDate!));
+  }
+
+  // Aggregate expenses by category
+  const categoryMap: Record<string, { amount: number; count: number }> = {};
+  for (const exp of filtered) {
+    if (!categoryMap[exp.category]) {
+      categoryMap[exp.category] = { amount: 0, count: 0 };
+    }
+    categoryMap[exp.category].amount += exp.amount;
+    categoryMap[exp.category].count += 1;
+  }
+
+  // Combine with budget store
+  const allCategories = new Set([
+    ...Object.keys(budgetStore),
+    ...Object.keys(categoryMap),
+  ]);
+
+  return Array.from(allCategories).map(category => ({
+    category,
+    budgetAmount: budgetStore[category] ?? 0,
+    actualAmount: Math.round((categoryMap[category]?.amount ?? 0) * 100) / 100,
+    transactionCount: categoryMap[category]?.count ?? 0,
+  }));
+}

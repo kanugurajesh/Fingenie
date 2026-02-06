@@ -1,9 +1,10 @@
 "use client";
 
 import { MessageThreadFull } from "@/components/tambo/message-thread-full";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { useMcpServers } from "@/components/tambo/mcp-config-modal";
 import { components, tools } from "@/lib/tambo";
-import { TamboProvider } from "@tambo-ai/react";
+import { TamboProvider, currentTimeContextHelper, currentPageContextHelper } from "@tambo-ai/react";
 
 /**
  * Home page component that renders the Tambo chat interface.
@@ -26,9 +27,19 @@ export default function Home() {
       tools={tools}
       tamboUrl={process.env.NEXT_PUBLIC_TAMBO_URL}
       mcpServers={mcpServers}
+      contextHelpers={{
+        currentTime: currentTimeContextHelper,
+        currentPage: currentPageContextHelper,
+      }}
     >
-      <div className="h-screen">
-        <MessageThreadFull className="max-w-4xl mx-auto"/>
+      <div className="h-screen flex flex-col">
+        <header className="flex items-center justify-between px-4 py-2 border-b border-border bg-card">
+          <h1 className="text-lg font-bold text-card-foreground">FinGenie</h1>
+          <ThemeToggle />
+        </header>
+        <div className="flex-1 min-h-0">
+          <MessageThreadFull className="max-w-4xl mx-auto"/>
+        </div>
       </div>
     </TamboProvider>
   );

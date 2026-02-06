@@ -1,131 +1,156 @@
-# Tambo Template
+# FinGenie
 
-This is a starter NextJS app with Tambo hooked up to get your AI app development started quickly.
+An AI-powered personal finance assistant built with Next.js, Tambo AI, and Supabase. Track expenses, set budgets, and get spending insights through a conversational chat interface.
 
-## Get Started
+## Tech Stack
 
-1. Run `npm create-tambo@latest my-tambo-app` for a new project
+- **Next.js 15** with App Router
+- **React 19** with TypeScript
+- **Tambo AI** for generative UI and AI chat
+- **Supabase** (Auth + PostgreSQL) for authentication and data storage
+- **Tailwind CSS 4** with dark mode support
+- **Recharts** for data visualization
+- **Zod** for schema validation
 
-2. `npm install`
+## Prerequisites
 
-3. `npx tambo init`
+- Node.js 18+
+- A [Supabase](https://supabase.com) project
+- A [Tambo](https://tambo.co/dashboard) API key (free)
 
-- or rename `example.env.local` to `.env.local` and add your tambo API key you can get for free [here](https://tambo.co/dashboard).
+## Getting Started
 
-4. Run `npm run dev` and go to `localhost:3000` to use the app!
-
-## Customizing
-
-### Change what components tambo can control
-
-You can see how components are registered with tambo in `src/lib/tambo.ts`:
-
-```tsx
-export const components: TamboComponent[] = [
-  {
-    name: "Graph",
-    description:
-      "A component that renders various types of charts (bar, line, pie) using Recharts. Supports customizable data visualization with labels, datasets, and styling options.",
-    component: Graph,
-    propsSchema: graphSchema,
-  },
-  // Add more components here
-];
-```
-
-You can install the graph component into any project with:
+### 1. Clone and install
 
 ```bash
-npx tambo add graph
+git clone <your-repo-url>
+cd fingenie
+npm install
 ```
 
-The example Graph component demonstrates several key features:
+### 2. Configure environment variables
 
-- Different prop types (strings, arrays, enums, nested objects)
-- Multiple chart types (bar, line, pie)
-- Customizable styling (variants, sizes)
-- Optional configurations (title, legend, colors)
-- Data visualization capabilities
+Copy the example env file and fill in your keys:
 
-Update the `components` array with any component(s) you want tambo to be able to use in a response!
-
-You can find more information about the options [here](https://docs.tambo.co/concepts/generative-interfaces/generative-components)
-
-### Add tools for tambo to use
-
-Tools are defined with `inputSchema` and `outputSchema`:
-
-```tsx
-export const tools: TamboTool[] = [
-  {
-    name: "globalPopulation",
-    description:
-      "A tool to get global population trends with optional year range filtering",
-    tool: getGlobalPopulationTrend,
-    inputSchema: z.object({
-      startYear: z.number().optional(),
-      endYear: z.number().optional(),
-    }),
-    outputSchema: z.array(
-      z.object({
-        year: z.number(),
-        population: z.number(),
-        growthRate: z.number(),
-      }),
-    ),
-  },
-];
+```bash
+cp example.env.local .env.local
 ```
 
-Find more information about tools [here.](https://docs.tambo.co/concepts/tools)
+Edit `.env.local` with your values:
 
-### The Magic of Tambo Requires the TamboProvider
-
-Make sure in the TamboProvider wrapped around your app:
-
-```tsx
-...
-<TamboProvider
-  apiKey={process.env.NEXT_PUBLIC_TAMBO_API_KEY!}
-  components={components} // Array of components to control
-  tools={tools} // Array of tools it can use
->
-  {children}
-</TamboProvider>
+```
+NEXT_PUBLIC_TAMBO_API_KEY=your_tambo_api_key
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 ```
 
-In this example we do this in the `Layout.tsx` file, but you can do it anywhere in your app that is a client component.
+| Variable | Description |
+|---|---|
+| `NEXT_PUBLIC_TAMBO_API_KEY` | Your Tambo API key from [tambo.co/dashboard](https://tambo.co/dashboard) |
+| `NEXT_PUBLIC_SUPABASE_URL` | Your Supabase project URL (Settings > API) |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Your Supabase anon/public key (Settings > API) |
 
-### Voice input
+### 3. Set up the database
 
-The template includes a `DictationButton` component using the `useTamboVoice` hook for speech-to-text input.
+The app requires three tables in Supabase: `profiles`, `expenses`, and `budgets`.
 
-### MCP (Model Context Protocol)
+1. Open the **SQL Editor** in your [Supabase Dashboard](https://supabase.com/dashboard)
+2. Copy the contents of `supabase/migrations/001_initial_schema.sql` and run it
 
-The template includes MCP support for connecting to external tools and resources. You can use the MCP hooks from `@tambo-ai/react/mcp`:
+This migration creates:
 
-- `useTamboMcpPromptList` - List available prompts from MCP servers
-- `useTamboMcpPrompt` - Get a specific prompt
-- `useTamboMcpResourceList` - List available resources
+| Table | Purpose |
+|---|---|
+| `profiles` | User profiles, auto-created on signup via a database trigger |
+| `expenses` | Individual expense records with date, amount, category, and description |
+| `budgets` | Per-category budget limits (one budget per category per user) |
 
-See `src/components/tambo/mcp-components.tsx` for example usage.
+All tables have Row Level Security (RLS) enabled so users can only access their own data.
 
-### Change where component responses are shown
+### 4. (Optional) Seed sample data
 
-The components used by tambo are shown alongside the message response from tambo within the chat thread, but you can have the result components show wherever you like by accessing the latest thread message's `renderedComponent` field:
+If you want to start with some test expenses:
 
-```tsx
-const { thread } = useTambo();
-const latestComponent =
-  thread?.messages[thread.messages.length - 1]?.renderedComponent;
+1. **Sign up** in the app first (so your user account exists in Supabase Auth).
+   If you signed up *before* running the migration, that's fine — the seed script will create your profile row automatically.
+2. Find your user UUID by running this in the SQL Editor:
+   ```sql
+   SELECT id FROM auth.users WHERE email = 'your@email.com';
+   ```
+   Or find it in the Supabase Dashboard under **Authentication > Users**.
+3. Open `scripts/seed.sql`, replace `YOUR_USER_UUID` with your actual UUID
+4. Run the modified SQL in the Supabase SQL Editor
 
-return (
-  <div>
-    {latestComponent && (
-      <div className="my-custom-wrapper">{latestComponent}</div>
-    )}
-  </div>
-);
+Alternatively, skip seeding and add expenses through the chat interface.
+
+### 5. Run the app
+
+```bash
+npm run dev
 ```
 
-For more detailed documentation, visit [Tambo's official docs](https://docs.tambo.co).
+Open [http://localhost:3000](http://localhost:3000). You'll be directed to sign up or log in, then can start chatting with FinGenie to track expenses, set budgets, and view spending insights.
+
+## Available Scripts
+
+```bash
+npm run dev       # Start development server (localhost:3000)
+npm run build     # Build for production
+npm run start     # Start production server
+npm run lint      # Run ESLint
+npm run lint:fix  # Run ESLint with auto-fix
+```
+
+## Project Structure
+
+```
+src/
+├── app/
+│   ├── auth/                  # Login, signup, and OAuth callback routes
+│   ├── chat/                  # Main chat interface
+│   ├── interactables/         # Interactive finance components
+│   ├── layout.tsx             # Root layout with TamboProvider + Supabase
+│   ├── page.tsx               # Landing / home page
+│   └── globals.css            # Global styles and CSS variables
+├── components/
+│   ├── tambo/                 # Chat UI components (messages, thread, input)
+│   ├── ui/                    # Reusable UI primitives
+│   ├── AuthButton.tsx         # Sign in / sign out button
+│   ├── BudgetForm.tsx         # Budget creation form
+│   ├── BudgetOverview.tsx     # Budget vs. spending display
+│   ├── InsightCard.tsx        # Spending insight cards
+│   ├── ThemeToggle.tsx        # Dark/light mode toggle
+│   └── TransactionList.tsx    # Expense list component
+├── lib/
+│   ├── supabase/
+│   │   ├── client.ts          # Browser Supabase client
+│   │   └── server.ts          # Server-side Supabase client
+│   ├── tambo.ts               # Component & tool registration for Tambo AI
+│   ├── thread-hooks.ts        # Custom thread management hooks
+│   └── utils.ts               # Utility functions
+├── services/
+│   ├── transactions.ts        # Expense & budget Supabase queries
+│   └── population-stats.ts    # Demo data service
+├── middleware.ts               # Supabase auth session refresh
+supabase/
+└── migrations/
+    └── 001_initial_schema.sql  # Database schema (tables, RLS, triggers)
+scripts/
+└── seed.sql                    # Optional sample expense data
+```
+
+## Deployment
+
+### Vercel
+
+1. Push your repo to GitHub
+2. Import the project in [Vercel](https://vercel.com)
+3. Add the three environment variables in the Vercel project settings
+4. Deploy
+
+### Supabase settings for production
+
+In your Supabase Dashboard under **Authentication > URL Configuration**:
+
+- Set **Site URL** to your production URL (e.g. `https://your-app.vercel.app`)
+- Add your production URL to **Redirect URLs** (e.g. `https://your-app.vercel.app/auth/callback`)

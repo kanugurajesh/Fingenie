@@ -1,40 +1,18 @@
 // src/services/transactions.ts
 
 import { z } from "zod";
+import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 
-// Module-level mutable array so addExpense persists within a session
-const allExpenses = [
-  { id: "1", date: "2024-01-05", description: "Grocery shopping", amount: 75.5, category: "Food" },
-  { id: "2", date: "2024-01-10", description: "Electric bill", amount: 95.0, category: "Utilities" },
-  { id: "3", date: "2024-01-15", description: "Rent payment", amount: 1500.0, category: "Housing" },
-  { id: "4", date: "2024-01-18", description: "Coffee shop", amount: 4.25, category: "Food" },
-  { id: "5", date: "2024-01-22", description: "Bus pass", amount: 65.0, category: "Transport" },
-  { id: "6", date: "2024-01-28", description: "Dinner with friends", amount: 120.0, category: "Social" },
-  { id: "7", date: "2024-02-01", description: "Rent payment", amount: 1500.0, category: "Housing" },
-  { id: "8", date: "2024-02-03", description: "Grocery shopping", amount: 82.3, category: "Food" },
-  { id: "9", date: "2024-02-07", description: "Internet bill", amount: 60.0, category: "Utilities" },
-  { id: "10", date: "2024-02-10", description: "Movie tickets", amount: 32.0, category: "Entertainment" },
-  { id: "11", date: "2024-02-14", description: "Valentine dinner", amount: 95.0, category: "Social" },
-  { id: "12", date: "2024-02-18", description: "Textbooks", amount: 145.0, category: "Education" },
-  { id: "13", date: "2024-02-25", description: "Doctor visit copay", amount: 40.0, category: "Healthcare" },
-  { id: "14", date: "2024-03-01", description: "Rent payment", amount: 1500.0, category: "Housing" },
-  { id: "15", date: "2024-03-05", description: "Grocery shopping", amount: 68.9, category: "Food" },
-  { id: "16", date: "2024-03-10", description: "Gas bill", amount: 45.0, category: "Utilities" },
-  { id: "17", date: "2024-03-15", description: "Uber rides", amount: 28.5, category: "Transport" },
-  { id: "18", date: "2024-03-20", description: "Concert tickets", amount: 75.0, category: "Entertainment" },
-  { id: "19", date: "2024-04-01", description: "Rent payment", amount: 1500.0, category: "Housing" },
-  { id: "20", date: "2024-04-08", description: "Grocery shopping", amount: 91.2, category: "Food" },
-  { id: "21", date: "2024-04-12", description: "Online course", amount: 49.99, category: "Education" },
-  { id: "22", date: "2024-04-18", description: "Prescription refill", amount: 25.0, category: "Healthcare" },
-  { id: "23", date: "2024-05-01", description: "Rent payment", amount: 1500.0, category: "Housing" },
-  { id: "24", date: "2024-05-10", description: "Grocery shopping", amount: 77.6, category: "Food" },
-  { id: "25", date: "2024-06-01", description: "Rent payment", amount: 1500.0, category: "Housing" },
-];
+// --- Helper: get the current user's ID ---
 
-let nextId = 26;
+async function requireUserId(): Promise<string> {
+  const supabase = getSupabaseBrowserClient();
+  const { data: { user }, error } = await supabase.auth.getUser();
+  if (error || !user) throw new Error("Not authenticated");
+  return user.id;
+}
 
-// Budget store for session persistence
-const budgetStore: Record<string, number> = {};
+// --- addExpense ---
 
 export const addExpenseSchema = z.object({
   description: z.string().describe("Description of the expense"),
@@ -45,16 +23,25 @@ export const addExpenseSchema = z.object({
 export type AddExpenseInput = z.infer<typeof addExpenseSchema>;
 
 export async function addExpense(input: AddExpenseInput): Promise<{ success: boolean; message: string }> {
-  const newExpense = {
-    id: String(nextId++),
+  const userId = await requireUserId();
+  const supabase = getSupabaseBrowserClient();
+
+  const { error } = await supabase.from("expenses").insert({
+    user_id: userId,
     date: new Date().toISOString().split("T")[0],
     description: input.description,
     amount: input.amount,
     category: input.category,
-  };
-  allExpenses.push(newExpense);
+  });
+
+  if (error) {
+    return { success: false, message: `Failed to add expense: ${error.message}` };
+  }
+
   return { success: true, message: `Expense '${input.description}' of $${input.amount} added to ${input.category}.` };
 }
+
+// --- getExpenses ---
 
 export const getExpensesSchema = z.object({
   category: z.string().optional().describe("Filter expenses by category"),
@@ -65,19 +52,30 @@ export const getExpensesSchema = z.object({
 export type GetExpensesInput = z.infer<typeof getExpensesSchema>;
 
 export async function getExpenses(input: GetExpensesInput): Promise<Array<{ id: string; date: string; description: string; amount: number; category: string }>> {
-  let filteredExpenses = [...allExpenses];
+  const supabase = getSupabaseBrowserClient();
+
+  let query = supabase.from("expenses").select("id, date, description, amount, category").order("date", { ascending: false });
 
   if (input.category) {
-    filteredExpenses = filteredExpenses.filter(exp => exp.category.toLowerCase() === input.category!.toLowerCase());
+    query = query.ilike("category", input.category);
   }
   if (input.startDate) {
-    filteredExpenses = filteredExpenses.filter(exp => new Date(exp.date) >= new Date(input.startDate!));
+    query = query.gte("date", input.startDate);
   }
   if (input.endDate) {
-    filteredExpenses = filteredExpenses.filter(exp => new Date(exp.date) <= new Date(input.endDate!));
+    query = query.lte("date", input.endDate);
   }
 
-  return filteredExpenses;
+  const { data, error } = await query;
+  if (error) throw new Error(`Failed to fetch expenses: ${error.message}`);
+
+  return (data ?? []).map((row: { id: string; date: string; description: string; amount: number; category: string }) => ({
+    id: row.id,
+    date: row.date,
+    description: row.description,
+    amount: Number(row.amount),
+    category: row.category,
+  }));
 }
 
 // --- getSpendingInsights ---
@@ -107,25 +105,14 @@ export const spendingInsightsOutputSchema = z.object({
 export type GetSpendingInsightsInput = z.infer<typeof getSpendingInsightsSchema>;
 
 export async function getSpendingInsights(input: GetSpendingInsightsInput) {
-  let filtered = [...allExpenses];
+  const expenses = await getExpenses(input);
 
-  if (input.category) {
-    filtered = filtered.filter(exp => exp.category.toLowerCase() === input.category!.toLowerCase());
-  }
-  if (input.startDate) {
-    filtered = filtered.filter(exp => new Date(exp.date) >= new Date(input.startDate!));
-  }
-  if (input.endDate) {
-    filtered = filtered.filter(exp => new Date(exp.date) <= new Date(input.endDate!));
-  }
-
-  const totalSpending = filtered.reduce((sum, exp) => sum + exp.amount, 0);
-  const transactionCount = filtered.length;
+  const totalSpending = expenses.reduce((sum, exp) => sum + exp.amount, 0);
+  const transactionCount = expenses.length;
   const averageTransaction = transactionCount > 0 ? Math.round((totalSpending / transactionCount) * 100) / 100 : 0;
 
-  // Group by category
   const categoryMap: Record<string, { amount: number; count: number }> = {};
-  for (const exp of filtered) {
+  for (const exp of expenses) {
     if (!categoryMap[exp.category]) {
       categoryMap[exp.category] = { amount: 0, count: 0 };
     }
@@ -177,30 +164,25 @@ export type GetSpendingTrendsInput = z.infer<typeof getSpendingTrendsSchema>;
 export async function getSpendingTrends(input: GetSpendingTrendsInput) {
   const groupBy = input.groupBy ?? "month";
 
-  let filtered = [...allExpenses];
-  if (input.category) {
-    filtered = filtered.filter(exp => exp.category.toLowerCase() === input.category!.toLowerCase());
-  }
+  const expenses = await getExpenses({ category: input.category });
 
-  // Sort by date
-  filtered.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  // Sort by date ascending for trend display
+  const sorted = [...expenses].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
   const groupMap: Record<string, number> = {};
 
-  for (const exp of filtered) {
+  for (const exp of sorted) {
     const date = new Date(exp.date);
     let key: string;
 
     if (groupBy === "day") {
       key = exp.date;
     } else if (groupBy === "week") {
-      // Get the Monday of the week
       const dayOfWeek = date.getDay();
       const monday = new Date(date);
       monday.setDate(date.getDate() - ((dayOfWeek + 6) % 7));
       key = `Week of ${monday.toISOString().split("T")[0]}`;
     } else {
-      // month
       key = date.toLocaleString("default", { month: "short", year: "numeric" });
     }
 
@@ -237,7 +219,28 @@ export const setBudgetOutputSchema = z.object({
 export type SetBudgetInput = z.infer<typeof setBudgetSchema>;
 
 export async function setBudget(input: SetBudgetInput) {
-  budgetStore[input.category] = input.amount;
+  const userId = await requireUserId();
+  const supabase = getSupabaseBrowserClient();
+
+  const { error } = await supabase.from("budgets").upsert(
+    {
+      user_id: userId,
+      category: input.category,
+      amount: input.amount,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "user_id,category" }
+  );
+
+  if (error) {
+    return {
+      success: false,
+      message: `Failed to set budget: ${error.message}`,
+      category: input.category,
+      amount: input.amount,
+    };
+  }
+
   return {
     success: true,
     message: `Budget for '${input.category}' set to $${input.amount}.`,
@@ -265,18 +268,27 @@ export const budgetOverviewOutputSchema = z.array(
 export type GetBudgetOverviewInput = z.infer<typeof getBudgetOverviewSchema>;
 
 export async function getBudgetOverview(input: GetBudgetOverviewInput) {
-  let filtered = [...allExpenses];
+  const supabase = getSupabaseBrowserClient();
 
-  if (input.startDate) {
-    filtered = filtered.filter(exp => new Date(exp.date) >= new Date(input.startDate!));
-  }
-  if (input.endDate) {
-    filtered = filtered.filter(exp => new Date(exp.date) <= new Date(input.endDate!));
+  // Fetch budgets for this user (RLS auto-scopes)
+  const { data: budgets, error: budgetsError } = await supabase
+    .from("budgets")
+    .select("category, amount");
+
+  if (budgetsError) throw new Error(`Failed to fetch budgets: ${budgetsError.message}`);
+
+  // Fetch expenses with optional date filters
+  const expenses = await getExpenses({ startDate: input.startDate, endDate: input.endDate });
+
+  // Build budget lookup
+  const budgetMap: Record<string, number> = {};
+  for (const b of budgets ?? []) {
+    budgetMap[b.category] = Number(b.amount);
   }
 
   // Aggregate expenses by category
   const categoryMap: Record<string, { amount: number; count: number }> = {};
-  for (const exp of filtered) {
+  for (const exp of expenses) {
     if (!categoryMap[exp.category]) {
       categoryMap[exp.category] = { amount: 0, count: 0 };
     }
@@ -284,15 +296,15 @@ export async function getBudgetOverview(input: GetBudgetOverviewInput) {
     categoryMap[exp.category].count += 1;
   }
 
-  // Combine with budget store
+  // Combine
   const allCategories = new Set([
-    ...Object.keys(budgetStore),
+    ...Object.keys(budgetMap),
     ...Object.keys(categoryMap),
   ]);
 
   return Array.from(allCategories).map(category => ({
     category,
-    budgetAmount: budgetStore[category] ?? 0,
+    budgetAmount: budgetMap[category] ?? 0,
     actualAmount: Math.round((categoryMap[category]?.amount ?? 0) * 100) / 100,
     transactionCount: categoryMap[category]?.count ?? 0,
   }));

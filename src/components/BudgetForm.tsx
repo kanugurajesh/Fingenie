@@ -1,8 +1,9 @@
 "use client";
 
-import { useTamboComponentState } from "@tambo-ai/react";
+import { useTamboComponentState, useTamboStreamStatus } from "@tambo-ai/react";
 import React from "react";
 import { z } from "zod";
+import { setBudget } from "@/services/transactions";
 
 export const budgetFormSchema = z.object({
   initialCategory: z.string().optional().describe("Initial category for the budget form."),
@@ -15,13 +16,36 @@ const BudgetForm: React.FC<BudgetFormProps> = ({
   initialCategory = "",
   initialAmount = 0,
 }) => {
+  const { streamStatus } = useTamboStreamStatus();
   const [category, setCategory] = useTamboComponentState<string>("category", initialCategory, initialCategory);
   const [amount, setAmount] = useTamboComponentState<number>("amount", initialAmount, initialAmount);
   const [submitted, setSubmitted] = useTamboComponentState<boolean>("submitted", false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  if (streamStatus.isPending || streamStatus.isStreaming) {
+    return (
+      <div className="bg-card border border-border shadow rounded-lg p-4 sm:p-6 xl:p-8">
+        <div className="animate-pulse">
+          <div className="h-6 w-28 bg-muted rounded mb-4" />
+          <div className="space-y-4">
+            <div>
+              <div className="h-4 w-20 bg-muted rounded mb-1" />
+              <div className="h-9 w-full bg-muted rounded" />
+            </div>
+            <div>
+              <div className="h-4 w-16 bg-muted rounded mb-1" />
+              <div className="h-9 w-full bg-muted rounded" />
+            </div>
+            <div className="h-9 w-full bg-muted rounded" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (category && (amount ?? 0) > 0) {
+      await setBudget({ category, amount: amount ?? 0 });
       setSubmitted(true);
     }
   };

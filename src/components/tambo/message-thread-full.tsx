@@ -1,6 +1,12 @@
 "use client";
 
 import type { messageVariants } from "@/components/tambo/message";
+import dynamic from "next/dynamic";
+
+const DictationButton = dynamic(
+  () => import("@/components/tambo/dictation-button"),
+  { ssr: false }
+);
 import {
   MessageInput,
   MessageInputError,
@@ -115,6 +121,7 @@ export const MessageThreadFull = React.forwardRef<
           <MessageInput>
             <MessageInputTextarea placeholder="Ask about your finances..." />
             <MessageInputToolbar>
+              <DictationButton />
               <MessageInputFileButton />
               <MessageInputMcpPromptButton />
               <MessageInputMcpResourceButton />

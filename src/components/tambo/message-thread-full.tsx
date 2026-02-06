@@ -70,21 +70,21 @@ export const MessageThreadFull = React.forwardRef<
   const defaultSuggestions: Suggestion[] = [
     {
       id: "suggestion-1",
-      title: "Get started",
-      detailedSuggestion: "What can you help me with?",
-      messageId: "welcome-query",
+      title: "Expenses",
+      detailedSuggestion: "Show my monthly expenses",
+      messageId: "expenses-query",
     },
     {
       id: "suggestion-2",
-      title: "Learn more",
-      detailedSuggestion: "Tell me about your capabilities.",
-      messageId: "capabilities-query",
+      title: "Insights",
+      detailedSuggestion: "Give me spending insights",
+      messageId: "insights-query",
     },
     {
       id: "suggestion-3",
-      title: "Examples",
-      detailedSuggestion: "Show me some example queries I can try.",
-      messageId: "examples-query",
+      title: "Trends",
+      detailedSuggestion: "Show spending trends",
+      messageId: "trends-query",
     },
   ];
 
@@ -113,7 +113,7 @@ export const MessageThreadFull = React.forwardRef<
         {/* Message input */}
         <div className="px-4 pb-4">
           <MessageInput>
-            <MessageInputTextarea placeholder="Type your message or paste images..." />
+            <MessageInputTextarea placeholder="Ask about your finances..." />
             <MessageInputToolbar>
               <MessageInputFileButton />
               <MessageInputMcpPromptButton />

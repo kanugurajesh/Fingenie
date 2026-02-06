@@ -1,5 +1,4 @@
 import { ApiKeyCheck } from "@/components/ApiKeyCheck";
-import Image from "next/image";
 
 const KeyFilesSection = () => (
   <div className="bg-white px-8 py-4">
@@ -8,65 +7,50 @@ const KeyFilesSection = () => (
       <li className="flex items-start gap-2">
         <span>📄</span>
         <span>
-          <code className="font-medium">src/app/layout.tsx</code> - Main layout
-          with TamboProvider
+          <code className="font-medium font-mono">src/lib/tambo.ts</code> -
+          Component and tool registration
+        </span>
+      </li>
+      <li className="flex items-start gap-2">
+        <span>📄</span>
+        <span>
+          <code className="font-medium font-mono">src/services/transactions.ts</code> -
+          Finance tools (expenses, insights, trends, budgets)
+        </span>
+      </li>
+      <li className="flex items-start gap-2">
+        <span>📄</span>
+        <span>
+          <code className="font-medium font-mono">src/components/BudgetForm.tsx</code> -
+          Interactive budget form component
+        </span>
+      </li>
+      <li className="flex items-start gap-2">
+        <span>📄</span>
+        <span>
+          <code className="font-medium font-mono">src/components/InsightCard.tsx</code> -
+          Spending insight display component
+        </span>
+      </li>
+      <li className="flex items-start gap-2">
+        <span>📄</span>
+        <span>
+          <code className="font-medium font-mono">src/components/TransactionList.tsx</code> -
+          Transaction list component
+        </span>
+      </li>
+      <li className="flex items-start gap-2">
+        <span>📄</span>
+        <span>
+          <code className="font-medium font-mono">src/components/tambo/graph.tsx</code> -
+          Chart visualization component
         </span>
       </li>
       <li className="flex items-start gap-2">
         <span>📄</span>
         <span>
           <code className="font-medium font-mono">src/app/chat/page.tsx</code> -
-          Chat page with TamboProvider and MCP integration
-        </span>
-      </li>
-      <li className="flex items-start gap-2">
-        <span>📄</span>
-        <span>
-          <code className="font-medium font-mono">
-            src/app/interactables/page.tsx
-          </code>{" "}
-          - Interactive demo page with tools and components
-        </span>
-      </li>
-      <li className="flex items-start gap-2">
-        <span>📄</span>
-        <span>
-          <code className="font-medium font-mono">
-            src/components/tambo/message-thread-full.tsx
-          </code>{" "}
-          - Chat UI
-        </span>
-      </li>
-      <li className="flex items-start gap-2">
-        <span>📄</span>
-        <span>
-          <code className="font-medium font-mono">
-            src/components/tambo/graph.tsx
-          </code>{" "}
-          - A generative graph component
-        </span>
-      </li>
-      <li className="flex items-start gap-2">
-        <span>📄</span>
-        <span>
-          <code className="font-medium font-mono">
-            src/services/population-stats.ts
-          </code>{" "}
-          - Example tool implementation with mock population data
-        </span>
-      </li>
-      <li className="flex items-start gap-2">
-        <span className="text-blue-500">📄</span>
-        <span>
-          <code className="font-medium font-mono">src/lib/tambo.ts</code> -
-          Component and tool registration
-        </span>
-      </li>
-      <li className="flex items-start gap-2">
-        <span className="text-blue-500">📄</span>
-        <span>
-          <code className="font-medium font-mono">README.md</code> - For more
-          details check out the README
+          Chat interface
         </span>
       </li>
     </ul>
@@ -96,16 +80,8 @@ export default function Home() {
     <div className="min-h-screen p-8 flex flex-col items-center justify-center font-[family-name:var(--font-geist-sans)]">
       <main className="max-w-2xl w-full space-y-8">
         <div className="flex flex-col items-center">
-          <a href="https://tambo.co" target="_blank" rel="noopener noreferrer">
-            <Image
-              src="/Octo-Icon.svg"
-              alt="Tambo AI Logo"
-              width={80}
-              height={80}
-              className="mb-4"
-            />
-          </a>
-          <h1 className="text-4xl text-center">tambo-ai chat template</h1>
+          <h1 className="text-4xl text-center font-bold">FinGenie</h1>
+          <p className="text-lg text-gray-500 mt-2">Your AI-powered personal finance assistant</p>
         </div>
 
         <div className="w-full space-y-8">
@@ -117,13 +93,7 @@ export default function Home() {
                   href="/chat"
                   className="px-6 py-3 rounded-md font-medium shadow-sm transition-colors text-lg mt-4 bg-[#7FFFC3] hover:bg-[#72e6b0] text-gray-800"
                 >
-                  Go to Chat →
-                </a>
-                <a
-                  href="/interactables"
-                  className="px-6 py-3 rounded-md font-medium shadow-sm transition-colors text-lg mt-4 bg-[#FFE17F] hover:bg-[#f5d570] text-gray-800"
-                >
-                  Interactables Demo →
+                  Start Managing Finances →
                 </a>
               </div>
             </ApiKeyCheck>

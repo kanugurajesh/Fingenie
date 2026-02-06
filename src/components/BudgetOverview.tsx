@@ -45,7 +45,7 @@ const BudgetOverview: React.FC<BudgetOverviewProps> = ({ budgets = [] }) => {
         Budget Overview
       </h3>
       <div className="space-y-4">
-        {budgets.map((budget) => {
+        {budgets.map((budget, index) => {
           const actual = budget.actualAmount ?? 0;
           const budgetAmt = budget.budgetAmount ?? 0;
           const count = budget.transactionCount ?? 0;
@@ -62,7 +62,7 @@ const BudgetOverview: React.FC<BudgetOverviewProps> = ({ budgets = [] }) => {
           const cappedWidth = Math.min(percentage, 100);
 
           return (
-            <div key={budget.category}>
+            <div key={`${budget.category}-${index}`}>
               <div className="flex justify-between items-center mb-1">
                 <span className="text-sm font-medium text-card-foreground">
                   {budget.category}

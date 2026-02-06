@@ -97,8 +97,11 @@ const BudgetForm: React.FC<BudgetFormProps> = ({
             type="number"
             id="amount"
             className="mt-1 block w-full border border-border rounded-md shadow-sm py-2 px-3 bg-card text-card-foreground focus:outline-none focus:ring-ring focus:border-ring sm:text-sm"
-            value={amount}
-            onChange={(e) => setAmount(parseFloat(e.target.value))}
+            value={amount ?? ""}
+            onChange={(e) => {
+              const val = parseFloat(e.target.value);
+              setAmount(Number.isNaN(val) ? 0 : val);
+            }}
             required
             min="0"
             step="0.01"

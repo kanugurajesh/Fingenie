@@ -1,5 +1,6 @@
 "use client";
 
+import AuthButton from "@/components/AuthButton";
 import { MessageThreadFull } from "@/components/tambo/message-thread-full";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useMcpServers } from "@/components/tambo/mcp-config-modal";
@@ -35,7 +36,10 @@ export default function Home() {
       <div className="h-screen flex flex-col">
         <header className="flex items-center justify-between px-4 py-2 border-b border-border bg-card">
           <h1 className="text-lg font-bold text-card-foreground">FinGenie</h1>
-          <ThemeToggle />
+          <div className="flex items-center gap-3">
+            <AuthButton />
+            <ThemeToggle />
+          </div>
         </header>
         <div className="flex-1 min-h-0">
           <MessageThreadFull className="max-w-4xl mx-auto"/>

@@ -18,6 +18,9 @@ import { Graph, graphSchema } from "@/components/tambo/graph";
 import {
   addExpense,
   addExpenseSchema,
+  deleteExpense,
+  deleteExpenseSchema,
+  deleteExpenseOutputSchema,
   getExpenses,
   getExpensesSchema,
   getSpendingInsights,
@@ -55,6 +58,14 @@ export const tools: TamboTool[] = [
       success: z.boolean(),
       message: z.string(),
     }),
+  },
+  {
+    name: "deleteExpense",
+    description:
+      "Deletes an expense by its ID. Use this when the user wants to remove or delete a specific transaction/expense. Requires the expense ID.",
+    tool: deleteExpense,
+    inputSchema: deleteExpenseSchema,
+    outputSchema: deleteExpenseOutputSchema,
   },
   {
     name: "getExpenses",

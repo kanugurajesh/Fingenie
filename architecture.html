@@ -1,0 +1,1081 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FinGenie Architecture</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --bg:#0f172a;--bg-card:#1e293b;--bg-card-hover:#263348;--bg-sidebar:#0c1222;
+    --text:#f1f5f9;--text-muted:#94a3b8;--text-dim:#64748b;
+    --accent-blue:#3b82f6;--accent-green:#22c55e;--accent-purple:#a855f7;
+    --accent-orange:#f59e0b;--accent-pink:#ec4899;--accent-cyan:#06b6d4;
+    --border:#334155;--sidebar-w:260px;--content-max:960px;
+    --radius:10px;--radius-sm:6px;
+  }
+  html{scroll-behavior:smooth;background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,-apple-system,sans-serif;line-height:1.6}
+  body{display:flex;min-height:100vh}
+
+  /* ── Sidebar ── */
+  .sidebar{
+    position:fixed;top:0;left:0;bottom:0;width:var(--sidebar-w);
+    background:var(--bg-sidebar);border-right:1px solid var(--border);
+    padding:24px 0;overflow-y:auto;z-index:100;
+    transition:transform .3s ease;
+  }
+  .sidebar-brand{padding:0 20px 20px;border-bottom:1px solid var(--border);margin-bottom:12px}
+  .sidebar-brand h2{font-size:20px;font-weight:700;color:var(--accent-blue)}
+  .sidebar-brand span{font-size:12px;color:var(--text-muted);display:block;margin-top:2px}
+  .sidebar nav{display:flex;flex-direction:column;gap:2px;padding:0 8px}
+  .sidebar a{
+    display:flex;align-items:center;gap:10px;padding:9px 14px;
+    text-decoration:none;color:var(--text-muted);font-size:13px;font-weight:500;
+    border-radius:var(--radius-sm);transition:all .15s;
+  }
+  .sidebar a:hover{background:var(--bg-card);color:var(--text)}
+  .sidebar a.active{background:var(--accent-blue);color:#fff}
+  .sidebar a .num{
+    display:inline-flex;align-items:center;justify-content:center;
+    width:22px;height:22px;border-radius:50%;font-size:11px;font-weight:700;
+    background:var(--bg-card);color:var(--text-dim);flex-shrink:0;
+  }
+  .sidebar a.active .num{background:rgba(255,255,255,.2);color:#fff}
+
+  /* ── Hamburger ── */
+  .hamburger{
+    display:none;position:fixed;top:14px;left:14px;z-index:200;
+    background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);
+    width:40px;height:40px;cursor:pointer;flex-direction:column;
+    align-items:center;justify-content:center;gap:5px;
+  }
+  .hamburger span{display:block;width:20px;height:2px;background:var(--text);border-radius:2px;transition:all .2s}
+  .hamburger.open span:nth-child(1){transform:translateY(7px) rotate(45deg)}
+  .hamburger.open span:nth-child(2){opacity:0}
+  .hamburger.open span:nth-child(3){transform:translateY(-7px) rotate(-45deg)}
+  .overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:90}
+
+  /* ── Main Content ── */
+  .main{margin-left:var(--sidebar-w);flex:1;padding:48px 40px 80px}
+  .main-inner{max-width:var(--content-max);margin:0 auto}
+
+  /* ── Section ── */
+  section{margin-bottom:64px;scroll-margin-top:24px}
+  section h2{font-size:28px;font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:12px}
+  section h2 .badge{
+    font-size:12px;font-weight:600;padding:3px 10px;border-radius:20px;
+    background:var(--accent-blue);color:#fff;
+  }
+  section>p{color:var(--text-muted);margin-bottom:24px;font-size:15px}
+
+  /* ── Hero ── */
+  .hero{text-align:center;padding:60px 0 40px}
+  .hero h1{font-size:48px;font-weight:800;background:linear-gradient(135deg,var(--accent-blue),var(--accent-purple));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+  .hero .subtitle{font-size:18px;color:var(--text-muted);margin:12px 0 32px}
+  .stats-row{display:flex;justify-content:center;gap:16px;flex-wrap:wrap}
+  .stat{
+    background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);
+    padding:16px 28px;text-align:center;min-width:140px;
+  }
+  .stat .val{font-size:28px;font-weight:800;color:var(--accent-blue)}
+  .stat .lbl{font-size:12px;color:var(--text-muted);margin-top:4px;text-transform:uppercase;letter-spacing:.5px}
+
+  /* ── Cards ── */
+  .card{
+    background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);
+    padding:24px;margin-bottom:16px;transition:border-color .2s;
+  }
+  .card:hover{border-color:var(--accent-blue)}
+  .card h3{font-size:16px;font-weight:600;margin-bottom:8px}
+  .card p{color:var(--text-muted);font-size:14px}
+
+  /* ── Grid ── */
+  .grid{display:grid;gap:16px}
+  .grid-2{grid-template-columns:repeat(2,1fr)}
+  .grid-3{grid-template-columns:repeat(3,1fr)}
+  .grid-4{grid-template-columns:repeat(4,1fr)}
+
+  /* ── Tech badge ── */
+  .tech-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:20px}
+  .tech-card h4{font-size:13px;text-transform:uppercase;letter-spacing:.8px;color:var(--text-dim);margin-bottom:12px}
+  .tech-badges{display:flex;flex-wrap:wrap;gap:8px}
+  .tech-badge{
+    display:inline-flex;align-items:center;gap:6px;padding:6px 14px;
+    border-radius:20px;font-size:13px;font-weight:500;
+    background:rgba(59,130,246,.12);color:var(--accent-blue);border:1px solid rgba(59,130,246,.25);
+  }
+  .tech-badge.green{background:rgba(34,197,94,.12);color:var(--accent-green);border-color:rgba(34,197,94,.25)}
+  .tech-badge.purple{background:rgba(168,85,247,.12);color:var(--accent-purple);border-color:rgba(168,85,247,.25)}
+  .tech-badge.orange{background:rgba(245,158,11,.12);color:var(--accent-orange);border-color:rgba(245,158,11,.25)}
+  .tech-badge.pink{background:rgba(236,72,153,.12);color:var(--accent-pink);border-color:rgba(236,72,153,.25)}
+  .tech-badge.cyan{background:rgba(6,182,212,.12);color:var(--accent-cyan);border-color:rgba(6,182,212,.25)}
+
+  /* ── Tables ── */
+  .table-wrap{overflow-x:auto;border-radius:var(--radius);border:1px solid var(--border)}
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  th{background:var(--bg-card);text-align:left;padding:12px 16px;color:var(--text-muted);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border)}
+  td{padding:12px 16px;border-bottom:1px solid var(--border);color:var(--text)}
+  tr:last-child td{border-bottom:none}
+  tr:hover td{background:var(--bg-card-hover)}
+  td code{background:rgba(59,130,246,.15);color:var(--accent-blue);padding:2px 7px;border-radius:4px;font-size:13px;font-family:'Cascadia Code','Fira Code',monospace}
+
+  /* ── Mermaid ── */
+  .diagram-wrap{overflow-x:auto;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:24px;margin-bottom:20px}
+  .diagram-label{font-size:13px;font-weight:600;color:var(--text-dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px}
+
+  /* ── Expandable cards ── */
+  .expand-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:10px;overflow:hidden}
+  .expand-header{
+    display:flex;align-items:center;justify-content:space-between;padding:16px 20px;
+    cursor:pointer;user-select:none;transition:background .15s;
+  }
+  .expand-header:hover{background:var(--bg-card-hover)}
+  .expand-header h4{font-size:15px;font-weight:600;display:flex;align-items:center;gap:10px}
+  .expand-header .arrow{transition:transform .2s;color:var(--text-dim);font-size:18px}
+  .expand-header .arrow.open{transform:rotate(90deg)}
+  .expand-body{padding:0 20px 20px;display:none}
+  .expand-body.open{display:block}
+  .expand-body .meta{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+  .expand-body .tag{font-size:12px;padding:3px 10px;border-radius:12px;font-weight:500}
+  .expand-body .tag.read{background:rgba(34,197,94,.15);color:var(--accent-green)}
+  .expand-body .tag.write{background:rgba(245,158,11,.15);color:var(--accent-orange)}
+  .expand-body .tag.delete{background:rgba(239,68,68,.15);color:#ef4444}
+  .expand-body .tag.compute{background:rgba(168,85,247,.15);color:var(--accent-purple)}
+  .expand-body .schema{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px;font-family:'Cascadia Code','Fira Code',monospace;font-size:13px;color:var(--text-muted);white-space:pre;overflow-x:auto;margin-top:8px}
+
+  /* ── File tree ── */
+  .file-tree{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:24px;font-family:'Cascadia Code','Fira Code',monospace;font-size:13px}
+  .ft-row{display:flex;align-items:baseline;gap:6px;padding:3px 0}
+  .ft-connector{color:var(--text-dim);user-select:none;flex-shrink:0;min-width:20px;text-align:right}
+  .file-tree .dir{color:var(--accent-blue);font-weight:600}
+  .file-tree .page{color:var(--accent-green)}
+  .file-tree .comp{color:var(--accent-purple)}
+  .file-tree .svc{color:var(--accent-orange)}
+  .file-tree .cfg{color:var(--accent-cyan)}
+  .file-tree .desc{color:var(--text-dim);font-family:'Segoe UI',system-ui,sans-serif;font-size:12px;margin-left:8px}
+
+  /* ── Env table ── */
+  .env-table code{background:rgba(168,85,247,.15);color:var(--accent-purple)}
+
+  /* ── Responsive ── */
+  @media(max-width:768px){
+    .sidebar{transform:translateX(-100%)}
+    .sidebar.open{transform:translateX(0)}
+    .hamburger{display:flex}
+    .overlay.show{display:block}
+    .main{margin-left:0;padding:68px 16px 60px}
+    .hero h1{font-size:32px}
+    .stats-row{gap:8px}
+    .stat{padding:12px 16px;min-width:110px}
+    .stat .val{font-size:22px}
+    .grid-2,.grid-3,.grid-4{grid-template-columns:1fr}
+  }
+  @media(min-width:769px) and (max-width:1100px){
+    .grid-3,.grid-4{grid-template-columns:repeat(2,1fr)}
+  }
+</style>
+</head>
+<body>
+
+<!-- Hamburger (mobile) -->
+<button class="hamburger" id="hamburger" onclick="toggleSidebar()">
+  <span></span><span></span><span></span>
+</button>
+<div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
+
+<!-- Sidebar -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-brand">
+    <h2>FinGenie</h2>
+    <span>Architecture Reference</span>
+  </div>
+  <nav>
+    <a href="#hero"><span class="num">1</span>Overview</a>
+    <a href="#high-level"><span class="num">2</span>High-Level Architecture</a>
+    <a href="#tech-stack"><span class="num">3</span>Tech Stack</a>
+    <a href="#routes"><span class="num">4</span>Route Map</a>
+    <a href="#components"><span class="num">5</span>Component Hierarchy</a>
+    <a href="#data-flow"><span class="num">6</span>Data Flow</a>
+    <a href="#services"><span class="num">7</span>Service Layer</a>
+    <a href="#auth"><span class="num">8</span>Authentication</a>
+    <a href="#providers"><span class="num">9</span>Provider Hierarchy</a>
+    <a href="#files"><span class="num">10</span>File Structure</a>
+  </nav>
+</aside>
+
+<!-- Main Content -->
+<div class="main">
+<div class="main-inner">
+
+<!-- ═══ 1. Hero ═══ -->
+<section id="hero" class="hero">
+  <h1>FinGenie Architecture</h1>
+  <p class="subtitle">AI-powered personal finance assistant built with Next.js 15, Tambo AI, and Supabase</p>
+  <p style="color:var(--text-dim);max-width:600px;margin:0 auto 32px;font-size:14px">
+    Track expenses, set budgets, and get spending insights through a conversational AI interface
+    with dynamically generated UI components.
+  </p>
+  <div class="stats-row">
+    <div class="stat"><div class="val">6</div><div class="lbl">Routes</div></div>
+    <div class="stat"><div class="val">5</div><div class="lbl">AI Components</div></div>
+    <div class="stat"><div class="val">8</div><div class="lbl">AI Tools</div></div>
+    <div class="stat"><div class="val">7</div><div class="lbl">Service Functions</div></div>
+  </div>
+</section>
+
+<!-- ═══ 2. High-Level Architecture ═══ -->
+<section id="high-level">
+  <h2>High-Level Architecture <span class="badge">System</span></h2>
+  <p>Bird's-eye view of the entire system — from user browser to database.</p>
+
+  <div class="diagram-wrap">
+    <div class="diagram-label">System Architecture Layers</div>
+    <pre class="mermaid">
+flowchart TD
+    subgraph Client["Client Layer"]
+      Browser["Browser"]
+      NextApp["Next.js App<br/>(React 19)"]
+      Browser --> NextApp
+    end
+
+    subgraph UI["UI Layer"]
+      direction LR
+      Pages["Pages<br/>Landing · Auth · Chat · Interactables"]
+      AIComp["Tambo AI Components<br/>Graph · BudgetForm · InsightCard<br/>TransactionList · BudgetOverview"]
+    end
+
+    subgraph AI["AI Layer"]
+      direction LR
+      TamboProvider["TamboProvider<br/>(context, registry, streaming)"]
+      TamboCloud["Tambo AI Cloud<br/>Tool selection · Component generation<br/>Streaming responses"]
+    end
+
+    subgraph Services["Service Layer"]
+      ToolFns["Tool Functions<br/>addExpense · deleteExpense · getExpenses<br/>getSpendingInsights · getSpendingTrends<br/>setBudget · deleteBudget · getBudgetOverview"]
+    end
+
+    subgraph Data["Data Layer"]
+      direction LR
+      SupaAuth["Supabase Auth<br/>Email/password · Sessions"]
+      SupaDB["Supabase PostgreSQL<br/>expenses · budgets<br/>Row Level Security"]
+    end
+
+    NextApp --> Pages
+    NextApp --> AIComp
+    Pages --> TamboProvider
+    AIComp --> TamboProvider
+    TamboProvider -->|"API requests<br/>(streaming)"| TamboCloud
+    TamboCloud -->|"invoke tools"| ToolFns
+    ToolFns -->|"queries"| SupaDB
+    NextApp -->|"auth flows"| SupaAuth
+    TamboCloud -->|"render components"| AIComp
+
+    style Browser fill:#1e293b,stroke:#64748b,color:#f1f5f9
+    style NextApp fill:#1e3a5f,stroke:#3b82f6,color:#f1f5f9
+    style Pages fill:#2d1f4e,stroke:#a855f7,color:#f1f5f9
+    style AIComp fill:#2d1f4e,stroke:#a855f7,color:#f1f5f9
+    style TamboProvider fill:#1e3a5f,stroke:#3b82f6,color:#f1f5f9
+    style TamboCloud fill:#1e3a5f,stroke:#3b82f6,color:#f1f5f9
+    style ToolFns fill:#3a2a1a,stroke:#f59e0b,color:#f1f5f9
+    style SupaAuth fill:#1a3a2a,stroke:#22c55e,color:#f1f5f9
+    style SupaDB fill:#1a3a2a,stroke:#22c55e,color:#f1f5f9
+    </pre>
+  </div>
+</section>
+
+<!-- ═══ 3. Tech Stack ═══ -->
+<section id="tech-stack">
+  <h2>Tech Stack <span class="badge">Core</span></h2>
+  <p>Technologies powering the application across all layers.</p>
+  <div class="grid grid-4">
+    <div class="tech-card">
+      <h4>Frontend</h4>
+      <div class="tech-badges">
+        <span class="tech-badge">Next.js 15.5</span>
+        <span class="tech-badge">React 19.1</span>
+        <span class="tech-badge">TypeScript 5</span>
+      </div>
+    </div>
+    <div class="tech-card">
+      <h4>Styling</h4>
+      <div class="tech-badges">
+        <span class="tech-badge pink">Tailwind CSS 4</span>
+        <span class="tech-badge pink">CVA 0.7</span>
+        <span class="tech-badge pink">Geist Fonts</span>
+      </div>
+    </div>
+    <div class="tech-card">
+      <h4>AI Engine</h4>
+      <div class="tech-badges">
+        <span class="tech-badge purple">Tambo React 0.70</span>
+        <span class="tech-badge purple">Tambo SDK 0.84</span>
+      </div>
+    </div>
+    <div class="tech-card">
+      <h4>Database</h4>
+      <div class="tech-badges">
+        <span class="tech-badge green">Supabase SSR 0.8</span>
+        <span class="tech-badge green">Supabase JS 2.95</span>
+      </div>
+    </div>
+    <div class="tech-card">
+      <h4>Rich Text</h4>
+      <div class="tech-badges">
+        <span class="tech-badge cyan">TipTap 3.17</span>
+      </div>
+    </div>
+    <div class="tech-card">
+      <h4>Charts</h4>
+      <div class="tech-badges">
+        <span class="tech-badge orange">Recharts 3.5</span>
+      </div>
+    </div>
+    <div class="tech-card">
+      <h4>UI Libraries</h4>
+      <div class="tech-badges">
+        <span class="tech-badge cyan">Radix UI</span>
+        <span class="tech-badge cyan">Lucide Icons</span>
+        <span class="tech-badge cyan">Framer Motion</span>
+      </div>
+    </div>
+    <div class="tech-card">
+      <h4>Validation</h4>
+      <div class="tech-badges">
+        <span class="tech-badge orange">Zod</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 4. Route Map ═══ -->
+<section id="routes">
+  <h2>Route Map <span class="badge">Navigation</span></h2>
+  <p>All application routes and their navigation relationships.</p>
+
+  <div class="diagram-wrap">
+    <div class="diagram-label">Route Navigation Flow</div>
+    <pre class="mermaid">
+flowchart LR
+    Landing["/ Landing"]
+    Login["/auth/login"]
+    Signup["/auth/signup"]
+    Callback["/auth/callback"]
+    Chat["/chat"]
+    Inter["/interactables"]
+
+    Landing -->|Sign In| Login
+    Landing -->|Create Account| Signup
+    Login -->|Success| Chat
+    Login -->|No account?| Signup
+    Signup -->|Email confirm| Callback
+    Signup -->|Have account?| Login
+    Callback -->|Session OK| Chat
+    Callback -->|Error| Login
+    Chat -.->|Nav| Inter
+    Inter -.->|Nav| Chat
+
+    style Landing fill:#1e3a5f,stroke:#3b82f6,color:#f1f5f9
+    style Login fill:#1e3a5f,stroke:#3b82f6,color:#f1f5f9
+    style Signup fill:#1e3a5f,stroke:#3b82f6,color:#f1f5f9
+    style Callback fill:#1a3a2a,stroke:#22c55e,color:#f1f5f9
+    style Chat fill:#2d1f4e,stroke:#a855f7,color:#f1f5f9
+    style Inter fill:#2d1f4e,stroke:#a855f7,color:#f1f5f9
+    </pre>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Path</th><th>File</th><th>Purpose</th><th>Auth</th><th>Key Components</th></tr></thead>
+      <tbody>
+        <tr><td><code>/</code></td><td>src/app/page.tsx</td><td>Landing page with hero &amp; feature cards</td><td>No</td><td>ThemeToggle</td></tr>
+        <tr><td><code>/auth/login</code></td><td>src/app/auth/login/page.tsx</td><td>Email/password login form</td><td>No *</td><td>Supabase signInWithPassword</td></tr>
+        <tr><td><code>/auth/signup</code></td><td>src/app/auth/signup/page.tsx</td><td>Account creation with email verification</td><td>No *</td><td>Supabase signUp</td></tr>
+        <tr><td><code>/auth/callback</code></td><td>src/app/auth/callback/route.ts</td><td>OAuth/email callback handler (GET)</td><td>No</td><td>exchangeCodeForSession</td></tr>
+        <tr><td><code>/chat</code></td><td>src/app/chat/page.tsx</td><td>Main AI chat interface</td><td>Yes</td><td>TamboProvider, MessageThreadFull, AuthButton</td></tr>
+        <tr><td><code>/interactables</code></td><td>src/app/interactables/page.tsx</td><td>Interactive finance dashboard demo</td><td>Yes</td><td>TamboProvider, BudgetCard, SpendingSummary</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p style="font-size:12px;color:var(--text-dim);margin-top:8px">* Authenticated users on /auth/* are redirected to /chat by middleware.</p>
+</section>
+
+<!-- ═══ 5. Component Hierarchy ═══ -->
+<section id="components">
+  <h2>Component Hierarchy <span class="badge">UI</span></h2>
+  <p>React component trees for the two main pages and the 5 AI-registered components.</p>
+
+  <div class="diagram-wrap">
+    <div class="diagram-label">Chat Page Component Tree</div>
+    <pre class="mermaid">
+graph TD
+    Home["Home (chat/page.tsx)"]
+    TP["TamboProvider"]
+    Header["Header Bar"]
+    AB["AuthButton"]
+    TT["ThemeToggle"]
+    MTF["MessageThreadFull"]
+    TH["ThreadHistory"]
+    THH["ThreadHistoryHeader"]
+    THNB["ThreadHistoryNewButton"]
+    THS["ThreadHistorySearch"]
+    THL["ThreadHistoryList"]
+    TC["ThreadContainer"]
+    SMC["ScrollableMessageContainer"]
+    TCont["ThreadContent"]
+    TCM["ThreadContentMessages"]
+    MS["MessageSuggestions"]
+    MSS["MessageSuggestionsStatus"]
+    MSL["MessageSuggestionsList"]
+    MI["MessageInput"]
+    MIT["MessageInputTextarea"]
+    MIToolbar["MessageInputToolbar"]
+    Dict["DictationButton"]
+    MIFile["MessageInputFileButton"]
+    MIPrompt["MessageInputMcpPromptButton"]
+    MIRes["MessageInputMcpResourceButton"]
+    MICfg["MessageInputMcpConfigButton"]
+    MISub["MessageInputSubmitButton"]
+    MIErr["MessageInputError"]
+
+    Home --> TP
+    TP --> Header
+    Header --> AB
+    Header --> TT
+    TP --> MTF
+    MTF --> TH
+    TH --> THH
+    TH --> THNB
+    TH --> THS
+    TH --> THL
+    MTF --> TC
+    TC --> SMC
+    SMC --> TCont
+    TCont --> TCM
+    TC --> MS
+    MS --> MSS
+    MS --> MSL
+    TC --> MI
+    MI --> MIT
+    MI --> MIToolbar
+    MIToolbar --> Dict
+    MIToolbar --> MIFile
+    MIToolbar --> MIPrompt
+    MIToolbar --> MIRes
+    MIToolbar --> MICfg
+    MIToolbar --> MISub
+    MI --> MIErr
+
+    style Home fill:#2d1f4e,stroke:#a855f7,color:#f1f5f9
+    style TP fill:#1e3a5f,stroke:#3b82f6,color:#f1f5f9
+    style MTF fill:#1e3a5f,stroke:#3b82f6,color:#f1f5f9
+    style TH fill:#1a3a2a,stroke:#22c55e,color:#f1f5f9
+    style TC fill:#1a3a2a,stroke:#22c55e,color:#f1f5f9
+    style MI fill:#3a2a1a,stroke:#f59e0b,color:#f1f5f9
+    </pre>
+  </div>
+
+  <div class="diagram-wrap">
+    <div class="diagram-label">Interactables Page Component Tree</div>
+    <pre class="mermaid">
+graph TD
+    IP["InteractablesPage"]
+    TP2["TamboProvider"]
+    Sidebar["Chat Sidebar (collapsible)"]
+    SMC2["ScrollableMessageContainer"]
+    TC2["ThreadContent"]
+    TCM2["ThreadContentMessages"]
+    MI2["MessageInput"]
+    MIT2["MessageInputTextarea"]
+    MIS2["MessageInputSubmitButton"]
+    Main["Main Content"]
+    SS["SpendingSummary (interactable)"]
+    BC1["BudgetCard - Food"]
+    BC2["BudgetCard - Housing"]
+    BC3["BudgetCard - Entertainment"]
+
+    IP --> TP2
+    TP2 --> Sidebar
+    Sidebar --> SMC2
+    SMC2 --> TC2
+    TC2 --> TCM2
+    Sidebar --> MI2
+    MI2 --> MIT2
+    MI2 --> MIS2
+    TP2 --> Main
+    Main --> SS
+    Main --> BC1
+    Main --> BC2
+    Main --> BC3
+
+    style IP fill:#2d1f4e,stroke:#a855f7,color:#f1f5f9
+    style TP2 fill:#1e3a5f,stroke:#3b82f6,color:#f1f5f9
+    style Sidebar fill:#1a3a2a,stroke:#22c55e,color:#f1f5f9
+    style SS fill:#3a2a1a,stroke:#f59e0b,color:#f1f5f9
+    style BC1 fill:#3a2a1a,stroke:#f59e0b,color:#f1f5f9
+    style BC2 fill:#3a2a1a,stroke:#f59e0b,color:#f1f5f9
+    style BC3 fill:#3a2a1a,stroke:#f59e0b,color:#f1f5f9
+    </pre>
+  </div>
+
+  <h3 style="margin:24px 0 12px;font-size:18px">Registered AI Components</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Component</th><th>Description</th><th>Props Schema</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><code>Graph</code></td>
+          <td>Bar, line, and pie charts for spending trends (Recharts)</td>
+          <td>data: {type, labels, datasets[]}, title, showLegend?, variant?, size?</td>
+        </tr>
+        <tr>
+          <td><code>BudgetForm</code></td>
+          <td>Interactive form for setting/updating a budget category</td>
+          <td>initialCategory?, initialAmount?</td>
+        </tr>
+        <tr>
+          <td><code>InsightCard</code></td>
+          <td>Displays a single financial metric with trend indicator</td>
+          <td>title, value, description, trend? (up/down/neutral)</td>
+        </tr>
+        <tr>
+          <td><code>TransactionList</code></td>
+          <td>Scrollable list of expenses with delete support</td>
+          <td>transactions: [{id, date, description, amount, category}], title?</td>
+        </tr>
+        <tr>
+          <td><code>BudgetOverview</code></td>
+          <td>Color-coded progress bars: budget vs. actual per category</td>
+          <td>budgets: [{category, budgetAmount, actualAmount, transactionCount}]</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ═══ 6. Data Flow ═══ -->
+<section id="data-flow">
+  <h2>Data Flow <span class="badge">Architecture</span></h2>
+  <p>How user input flows through the AI system to produce dynamic UI.</p>
+
+  <div class="diagram-wrap">
+    <div class="diagram-label">Request Lifecycle</div>
+    <pre class="mermaid">
+sequenceDiagram
+    participant U as User
+    participant MI as MessageInput
+    participant TP as TamboProvider
+    participant AI as Tambo AI
+    participant Tool as Tool Function
+    participant SB as Supabase
+    participant Comp as AI Component
+
+    U->>MI: Types message
+    MI->>TP: Submit via useTamboThread
+    TP->>AI: Stream request with context helpers
+    AI->>AI: Determine intent
+    AI->>Tool: Invoke tool (e.g. getExpenses)
+    Tool->>SB: Query database
+    SB-->>Tool: Return data
+    Tool-->>AI: Return result
+    AI->>Comp: Select &amp; render component
+    Comp-->>U: Display dynamic UI
+    </pre>
+  </div>
+
+  <div class="diagram-wrap">
+    <div class="diagram-label">Tool-to-Component Mapping</div>
+    <pre class="mermaid">
+flowchart LR
+    subgraph Tools
+      GE["getExpenses"]
+      AE["addExpense"]
+      DE["deleteExpense"]
+      GSI["getSpendingInsights"]
+      GST["getSpendingTrends"]
+      SB2["setBudget"]
+      DB["deleteBudget"]
+      GBO["getBudgetOverview"]
+    end
+
+    subgraph Components
+      TL["TransactionList"]
+      IC["InsightCard"]
+      GR["Graph"]
+      BF["BudgetForm"]
+      BO["BudgetOverview"]
+    end
+
+    GE -->|expense data| TL
+    AE -->|confirmation| TL
+    DE -->|updated list| TL
+    GSI -->|metrics| IC
+    GST -->|chart data| GR
+    SB2 -->|budget set| BO
+    DB -->|budget removed| BO
+    GBO -->|budget vs actual| BO
+
+    style GE fill:#1a3a2a,stroke:#22c55e,color:#f1f5f9
+    style AE fill:#1a3a2a,stroke:#22c55e,color:#f1f5f9
+    style DE fill:#1a3a2a,stroke:#22c55e,color:#f1f5f9
+    style GSI fill:#1a3a2a,stroke:#22c55e,color:#f1f5f9
+    style GST fill:#1a3a2a,stroke:#22c55e,color:#f1f5f9
+    style SB2 fill:#1a3a2a,stroke:#22c55e,color:#f1f5f9
+    style DB fill:#1a3a2a,stroke:#22c55e,color:#f1f5f9
+    style GBO fill:#1a3a2a,stroke:#22c55e,color:#f1f5f9
+    style TL fill:#2d1f4e,stroke:#a855f7,color:#f1f5f9
+    style IC fill:#2d1f4e,stroke:#a855f7,color:#f1f5f9
+    style GR fill:#2d1f4e,stroke:#a855f7,color:#f1f5f9
+    style BF fill:#2d1f4e,stroke:#a855f7,color:#f1f5f9
+    style BO fill:#2d1f4e,stroke:#a855f7,color:#f1f5f9
+    </pre>
+  </div>
+</section>
+
+<!-- ═══ 7. Service Layer ═══ -->
+<section id="services">
+  <h2>Service Layer <span class="badge">Data</span></h2>
+  <p>Database schema and the 8 service functions in <code>src/services/transactions.ts</code>.</p>
+
+  <div class="diagram-wrap">
+    <div class="diagram-label">Database Schema (Supabase + RLS)</div>
+    <pre class="mermaid">
+erDiagram
+    expenses {
+        uuid id PK
+        uuid user_id FK
+        date date
+        text description
+        numeric amount
+        text category
+    }
+    budgets {
+        uuid id PK
+        uuid user_id FK
+        text category
+        numeric amount
+        timestamptz updated_at
+    }
+    expenses }o--|| users : "user_id"
+    budgets }o--|| users : "user_id"
+    users {
+        uuid id PK
+    }
+    </pre>
+  </div>
+
+  <h3 style="margin:20px 0 12px;font-size:18px">Service Functions</h3>
+
+  <!-- addExpense -->
+  <div class="expand-card">
+    <div class="expand-header" onclick="toggleExpand(this)">
+      <h4><span class="tech-badge orange" style="font-size:11px">WRITE</span> addExpense</h4>
+      <span class="arrow">&#9654;</span>
+    </div>
+    <div class="expand-body">
+      <p style="color:var(--text-muted);font-size:14px;margin-bottom:10px">Adds a new financial expense to the user's expense tracker.</p>
+      <div class="meta"><span class="tag write">INSERT</span><span class="tag write">expenses table</span></div>
+      <div class="schema">Input:  { description: string, amount: number, category: string }
+Output: { success: boolean, message: string }</div>
+    </div>
+  </div>
+
+  <!-- deleteExpense -->
+  <div class="expand-card">
+    <div class="expand-header" onclick="toggleExpand(this)">
+      <h4><span class="tech-badge" style="font-size:11px;background:rgba(239,68,68,.15);color:#ef4444;border-color:rgba(239,68,68,.25)">DELETE</span> deleteExpense</h4>
+      <span class="arrow">&#9654;</span>
+    </div>
+    <div class="expand-body">
+      <p style="color:var(--text-muted);font-size:14px;margin-bottom:10px">Deletes an expense by its ID.</p>
+      <div class="meta"><span class="tag delete">DELETE</span><span class="tag delete">expenses table</span></div>
+      <div class="schema">Input:  { expenseId: string }
+Output: { success: boolean, message: string }</div>
+    </div>
+  </div>
+
+  <!-- getExpenses -->
+  <div class="expand-card">
+    <div class="expand-header" onclick="toggleExpand(this)">
+      <h4><span class="tech-badge green" style="font-size:11px">READ</span> getExpenses</h4>
+      <span class="arrow">&#9654;</span>
+    </div>
+    <div class="expand-body">
+      <p style="color:var(--text-muted);font-size:14px;margin-bottom:10px">Retrieves expenses with optional filtering by category and date range.</p>
+      <div class="meta"><span class="tag read">SELECT</span><span class="tag read">expenses table</span></div>
+      <div class="schema">Input:  { category?: string, startDate?: string, endDate?: string }
+Output: [{ id, date, description, amount, category }]</div>
+    </div>
+  </div>
+
+  <!-- getSpendingInsights -->
+  <div class="expand-card">
+    <div class="expand-header" onclick="toggleExpand(this)">
+      <h4><span class="tech-badge purple" style="font-size:11px">COMPUTE</span> getSpendingInsights</h4>
+      <span class="arrow">&#9654;</span>
+    </div>
+    <div class="expand-body">
+      <p style="color:var(--text-muted);font-size:14px;margin-bottom:10px">Analyzes spending data: totals, averages, top category, and category breakdown.</p>
+      <div class="meta"><span class="tag compute">AGGREGATE</span><span class="tag read">via getExpenses</span></div>
+      <div class="schema">Input:  { category?: string, startDate?: string, endDate?: string }
+Output: { totalSpending, averageTransaction, transactionCount,
+         topCategory, topCategoryAmount,
+         categoryBreakdown: [{ category, amount, percentage, count }] }</div>
+    </div>
+  </div>
+
+  <!-- getSpendingTrends -->
+  <div class="expand-card">
+    <div class="expand-header" onclick="toggleExpand(this)">
+      <h4><span class="tech-badge purple" style="font-size:11px">COMPUTE</span> getSpendingTrends</h4>
+      <span class="arrow">&#9654;</span>
+    </div>
+    <div class="expand-body">
+      <p style="color:var(--text-muted);font-size:14px;margin-bottom:10px">Returns spending data grouped by day, week, or month in chart-ready format.</p>
+      <div class="meta"><span class="tag compute">AGGREGATE</span><span class="tag read">via getExpenses</span></div>
+      <div class="schema">Input:  { groupBy?: "day" | "week" | "month", category?: string }
+Output: { labels: string[], datasets: [{ label, data: number[] }] }</div>
+    </div>
+  </div>
+
+  <!-- setBudget -->
+  <div class="expand-card">
+    <div class="expand-header" onclick="toggleExpand(this)">
+      <h4><span class="tech-badge orange" style="font-size:11px">WRITE</span> setBudget</h4>
+      <span class="arrow">&#9654;</span>
+    </div>
+    <div class="expand-body">
+      <p style="color:var(--text-muted);font-size:14px;margin-bottom:10px">Sets or updates a budget amount for a specific spending category (upsert).</p>
+      <div class="meta"><span class="tag write">UPSERT</span><span class="tag write">budgets table</span></div>
+      <div class="schema">Input:  { category: string, amount: number }
+Output: { success: boolean, message: string, category: string, amount: number }</div>
+    </div>
+  </div>
+
+  <!-- deleteBudget -->
+  <div class="expand-card">
+    <div class="expand-header" onclick="toggleExpand(this)">
+      <h4><span class="tech-badge" style="font-size:11px;background:rgba(239,68,68,.15);color:#ef4444;border-color:rgba(239,68,68,.25)">DELETE</span> deleteBudget</h4>
+      <span class="arrow">&#9654;</span>
+    </div>
+    <div class="expand-body">
+      <p style="color:var(--text-muted);font-size:14px;margin-bottom:10px">Deletes a budget for a specific category.</p>
+      <div class="meta"><span class="tag delete">DELETE</span><span class="tag delete">budgets table</span></div>
+      <div class="schema">Input:  { category: string }
+Output: { success: boolean, message: string }</div>
+    </div>
+  </div>
+
+  <!-- getBudgetOverview -->
+  <div class="expand-card">
+    <div class="expand-header" onclick="toggleExpand(this)">
+      <h4><span class="tech-badge green" style="font-size:11px">READ</span> getBudgetOverview</h4>
+      <span class="arrow">&#9654;</span>
+    </div>
+    <div class="expand-body">
+      <p style="color:var(--text-muted);font-size:14px;margin-bottom:10px">Returns budget overview comparing budgets vs actual spending per category.</p>
+      <div class="meta"><span class="tag read">SELECT</span><span class="tag read">budgets + expenses</span></div>
+      <div class="schema">Input:  { startDate?: string, endDate?: string }
+Output: [{ category, budgetAmount, actualAmount, transactionCount }]</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 8. Authentication Flow ═══ -->
+<section id="auth">
+  <h2>Authentication <span class="badge">Security</span></h2>
+  <p>Supabase Auth flows and middleware route protection.</p>
+
+  <div class="diagram-wrap">
+    <div class="diagram-label">Sign-Up Flow</div>
+    <pre class="mermaid">
+sequenceDiagram
+    participant U as User
+    participant SP as /auth/signup
+    participant SB as Supabase Auth
+    participant EM as Email
+    participant CB as /auth/callback
+    participant CH as /chat
+
+    U->>SP: Fill email + password
+    SP->>SB: signUp({ email, password, emailRedirectTo })
+    SB->>EM: Send confirmation link
+    SP-->>U: Show "Check your email" screen
+    U->>EM: Click confirmation link
+    EM->>CB: GET /auth/callback?code=xxx
+    CB->>SB: exchangeCodeForSession(code)
+    SB-->>CB: Session created
+    CB->>CH: Redirect to /chat
+    </pre>
+  </div>
+
+  <div class="diagram-wrap">
+    <div class="diagram-label">Login Flow</div>
+    <pre class="mermaid">
+sequenceDiagram
+    participant U as User
+    participant LP as /auth/login
+    participant SB as Supabase Auth
+    participant CH as /chat
+
+    U->>LP: Fill email + password
+    LP->>SB: signInWithPassword({ email, password })
+    alt Success
+        SB-->>LP: Session cookie set
+        LP->>CH: router.push("/chat") + refresh
+    else Error
+        SB-->>LP: Error message
+        LP-->>U: Display error
+    end
+    </pre>
+  </div>
+
+  <div class="diagram-wrap">
+    <div class="diagram-label">Middleware Route Protection</div>
+    <pre class="mermaid">
+flowchart TD
+    REQ["Incoming Request"]
+    MATCH{"Path matches<br/>/chat/* or /interactables/*<br/>or /auth/*?"}
+    PASS["Pass through"]
+    REFRESH["Refresh auth session<br/>(supabase.auth.getUser)"]
+    AUTHED{"User<br/>authenticated?"}
+    PROT{"Path is<br/>/chat or /interactables?"}
+    AUTH_PAGE{"Path starts<br/>with /auth?"}
+    REDIR_LOGIN["Redirect to /auth/login"]
+    REDIR_CHAT["Redirect to /chat"]
+    CONTINUE["Continue to page"]
+
+    REQ --> MATCH
+    MATCH -->|No| PASS
+    MATCH -->|Yes| REFRESH
+    REFRESH --> AUTHED
+    AUTHED -->|No| PROT
+    AUTHED -->|Yes| AUTH_PAGE
+    PROT -->|Yes| REDIR_LOGIN
+    PROT -->|No| CONTINUE
+    AUTH_PAGE -->|Yes| REDIR_CHAT
+    AUTH_PAGE -->|No| CONTINUE
+
+    style REQ fill:#1e3a5f,stroke:#3b82f6,color:#f1f5f9
+    style REDIR_LOGIN fill:#3a1a1a,stroke:#ef4444,color:#f1f5f9
+    style REDIR_CHAT fill:#1a3a2a,stroke:#22c55e,color:#f1f5f9
+    style CONTINUE fill:#1a3a2a,stroke:#22c55e,color:#f1f5f9
+    style PASS fill:#1e293b,stroke:#64748b,color:#f1f5f9
+    </pre>
+  </div>
+
+  <div class="table-wrap" style="margin-top:16px">
+    <table>
+      <thead><tr><th>Matcher Pattern</th><th>Behavior (Unauthenticated)</th><th>Behavior (Authenticated)</th></tr></thead>
+      <tbody>
+        <tr><td><code>/chat/:path*</code></td><td>Redirect to /auth/login</td><td>Allow access</td></tr>
+        <tr><td><code>/interactables/:path*</code></td><td>Redirect to /auth/login</td><td>Allow access</td></tr>
+        <tr><td><code>/auth/:path*</code></td><td>Allow access</td><td>Redirect to /chat</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ═══ 9. Provider Hierarchy ═══ -->
+<section id="providers">
+  <h2>Provider Hierarchy <span class="badge">Context</span></h2>
+  <p>How TamboProvider wraps pages and the hooks available throughout the app.</p>
+
+  <div class="diagram-wrap">
+    <div class="diagram-label">Provider Nesting &amp; Context</div>
+    <pre class="mermaid">
+graph TD
+    RL["RootLayout<br/>(Geist fonts, dark mode script)"]
+
+    subgraph ChatPage["/chat"]
+      TP1["TamboProvider<br/>apiKey, components, tools,<br/>mcpServers, contextHelpers"]
+      CH_CTX["Context Helpers:<br/>currentTime, currentPage"]
+      TP1 --- CH_CTX
+    end
+
+    subgraph InterPage["/interactables"]
+      TP2["TamboProvider<br/>apiKey, components, tools"]
+    end
+
+    RL --> ChatPage
+    RL --> InterPage
+
+    style RL fill:#1e293b,stroke:#64748b,color:#f1f5f9
+    style TP1 fill:#1e3a5f,stroke:#3b82f6,color:#f1f5f9
+    style CH_CTX fill:#2d1f4e,stroke:#a855f7,color:#f1f5f9
+    style TP2 fill:#1e3a5f,stroke:#3b82f6,color:#f1f5f9
+    </pre>
+  </div>
+
+  <h3 style="margin:20px 0 12px;font-size:18px">Tambo Hooks Used</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Hook</th><th>Purpose</th><th>Used In</th></tr></thead>
+      <tbody>
+        <tr><td><code>useTamboThread</code></td><td>Thread state and message management</td><td>Thread components</td></tr>
+        <tr><td><code>useTamboThreadInput</code></td><td>Input handling for chat text area</td><td>MessageInput</td></tr>
+        <tr><td><code>useTamboStreaming</code></td><td>Real-time content streaming</td><td>ThreadContent</td></tr>
+        <tr><td><code>useTamboSuggestions</code></td><td>AI suggestion management</td><td>MessageSuggestions</td></tr>
+        <tr><td><code>useTamboComponentState</code></td><td>Component-level state for AI components</td><td>BudgetForm</td></tr>
+        <tr><td><code>useTamboRegistry</code></td><td>Component and tool registration</td><td>TamboProvider internal</td></tr>
+        <tr><td><code>withInteractable</code></td><td>HOC wrapper for interactable components</td><td>BudgetCard, SpendingSummary</td></tr>
+        <tr><td><code>useMcpServers</code></td><td>MCP server configuration (client-side)</td><td>chat/page.tsx</td></tr>
+        <tr><td><code>currentTimeContextHelper</code></td><td>Provides current time to AI context</td><td>chat/page.tsx</td></tr>
+        <tr><td><code>currentPageContextHelper</code></td><td>Provides current page info to AI context</td><td>chat/page.tsx</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ═══ 10. File Structure ═══ -->
+<section id="files">
+  <h2>File Structure <span class="badge">Layout</span></h2>
+  <p>Source directory layout with color-coded file types.</p>
+
+  <div class="file-tree">
+    <div class="ft-row"><span class="dir">src/</span></div>
+    <div class="ft-row" style="padding-left:20px"><span class="ft-connector">├──</span> <span class="dir">app/</span></div>
+    <div class="ft-row" style="padding-left:40px"><span class="ft-connector">├──</span> <span class="page">page.tsx</span> <span class="desc">Landing page</span></div>
+    <div class="ft-row" style="padding-left:40px"><span class="ft-connector">├──</span> <span class="cfg">layout.tsx</span> <span class="desc">Root layout (Geist fonts, dark mode)</span></div>
+    <div class="ft-row" style="padding-left:40px"><span class="ft-connector">├──</span> <span class="cfg">globals.css</span> <span class="desc">Global styles &amp; Tailwind</span></div>
+    <div class="ft-row" style="padding-left:40px"><span class="ft-connector">├──</span> <span class="dir">chat/</span></div>
+    <div class="ft-row" style="padding-left:60px"><span class="ft-connector">└──</span> <span class="page">page.tsx</span> <span class="desc">Main AI chat interface</span></div>
+    <div class="ft-row" style="padding-left:40px"><span class="ft-connector">├──</span> <span class="dir">interactables/</span></div>
+    <div class="ft-row" style="padding-left:60px"><span class="ft-connector">├──</span> <span class="page">page.tsx</span> <span class="desc">Interactive dashboard demo</span></div>
+    <div class="ft-row" style="padding-left:60px"><span class="ft-connector">└──</span> <span class="dir">components/</span></div>
+    <div class="ft-row" style="padding-left:80px"><span class="ft-connector">├──</span> <span class="comp">budget-card.tsx</span> <span class="desc">Interactable budget card</span></div>
+    <div class="ft-row" style="padding-left:80px"><span class="ft-connector">└──</span> <span class="comp">spending-summary.tsx</span> <span class="desc">Interactable spending summary</span></div>
+    <div class="ft-row" style="padding-left:40px"><span class="ft-connector">└──</span> <span class="dir">auth/</span></div>
+    <div class="ft-row" style="padding-left:60px"><span class="ft-connector">├──</span> <span class="dir">login/</span></div>
+    <div class="ft-row" style="padding-left:80px"><span class="ft-connector">└──</span> <span class="page">page.tsx</span> <span class="desc">Login form</span></div>
+    <div class="ft-row" style="padding-left:60px"><span class="ft-connector">├──</span> <span class="dir">signup/</span></div>
+    <div class="ft-row" style="padding-left:80px"><span class="ft-connector">└──</span> <span class="page">page.tsx</span> <span class="desc">Signup form</span></div>
+    <div class="ft-row" style="padding-left:60px"><span class="ft-connector">└──</span> <span class="dir">callback/</span></div>
+    <div class="ft-row" style="padding-left:80px"><span class="ft-connector">└──</span> <span class="svc">route.ts</span> <span class="desc">Email verification callback</span></div>
+    <div class="ft-row" style="padding-left:20px"><span class="ft-connector">├──</span> <span class="dir">components/</span></div>
+    <div class="ft-row" style="padding-left:40px"><span class="ft-connector">├──</span> <span class="comp">AuthButton.tsx</span> <span class="desc">User display + sign out</span></div>
+    <div class="ft-row" style="padding-left:40px"><span class="ft-connector">├──</span> <span class="comp">BudgetForm.tsx</span> <span class="desc">AI: budget input form</span></div>
+    <div class="ft-row" style="padding-left:40px"><span class="ft-connector">├──</span> <span class="comp">BudgetOverview.tsx</span> <span class="desc">AI: budget progress bars</span></div>
+    <div class="ft-row" style="padding-left:40px"><span class="ft-connector">├──</span> <span class="comp">InsightCard.tsx</span> <span class="desc">AI: single metric card</span></div>
+    <div class="ft-row" style="padding-left:40px"><span class="ft-connector">├──</span> <span class="comp">TransactionList.tsx</span> <span class="desc">AI: expense list with delete</span></div>
+    <div class="ft-row" style="padding-left:40px"><span class="ft-connector">├──</span> <span class="comp">ThemeToggle.tsx</span> <span class="desc">Dark/light mode toggle</span></div>
+    <div class="ft-row" style="padding-left:40px"><span class="ft-connector">└──</span> <span class="dir">tambo/</span></div>
+    <div class="ft-row" style="padding-left:60px"><span class="ft-connector">├──</span> <span class="comp">graph.tsx</span> <span class="desc">AI: Recharts visualization</span></div>
+    <div class="ft-row" style="padding-left:60px"><span class="ft-connector">├──</span> <span class="comp">message-thread-full.tsx</span> <span class="desc">Full chat thread layout</span></div>
+    <div class="ft-row" style="padding-left:60px"><span class="ft-connector">├──</span> <span class="comp">message-input.tsx</span> <span class="desc">Chat input with toolbar</span></div>
+    <div class="ft-row" style="padding-left:60px"><span class="ft-connector">├──</span> <span class="comp">message-suggestions.tsx</span> <span class="desc">AI suggestion chips</span></div>
+    <div class="ft-row" style="padding-left:60px"><span class="ft-connector">├──</span> <span class="comp">message.tsx</span> <span class="desc">Single message bubble</span></div>
+    <div class="ft-row" style="padding-left:60px"><span class="ft-connector">├──</span> <span class="comp">thread-container.tsx</span> <span class="desc">Thread wrapper with context</span></div>
+    <div class="ft-row" style="padding-left:60px"><span class="ft-connector">├──</span> <span class="comp">thread-content.tsx</span> <span class="desc">Message list renderer</span></div>
+    <div class="ft-row" style="padding-left:60px"><span class="ft-connector">├──</span> <span class="comp">thread-history.tsx</span> <span class="desc">Thread sidebar</span></div>
+    <div class="ft-row" style="padding-left:60px"><span class="ft-connector">├──</span> <span class="comp">scrollable-message-container.tsx</span> <span class="desc">Auto-scroll wrapper</span></div>
+    <div class="ft-row" style="padding-left:60px"><span class="ft-connector">├──</span> <span class="comp">dictation-button.tsx</span> <span class="desc">Voice input (dynamic import)</span></div>
+    <div class="ft-row" style="padding-left:60px"><span class="ft-connector">└──</span> <span class="comp">mcp-config-modal.tsx</span> <span class="desc">MCP server configuration</span></div>
+    <div class="ft-row" style="padding-left:20px"><span class="ft-connector">├──</span> <span class="dir">lib/</span></div>
+    <div class="ft-row" style="padding-left:40px"><span class="ft-connector">├──</span> <span class="cfg">tambo.ts</span> <span class="desc">Central config: components &amp; tools registry</span></div>
+    <div class="ft-row" style="padding-left:40px"><span class="ft-connector">├──</span> <span class="cfg">thread-hooks.ts</span> <span class="desc">Custom thread management hooks</span></div>
+    <div class="ft-row" style="padding-left:40px"><span class="ft-connector">├──</span> <span class="cfg">utils.ts</span> <span class="desc">Utility functions (cn, etc.)</span></div>
+    <div class="ft-row" style="padding-left:40px"><span class="ft-connector">└──</span> <span class="dir">supabase/</span></div>
+    <div class="ft-row" style="padding-left:60px"><span class="ft-connector">├──</span> <span class="svc">client.ts</span> <span class="desc">Browser Supabase client (singleton)</span></div>
+    <div class="ft-row" style="padding-left:60px"><span class="ft-connector">└──</span> <span class="svc">server.ts</span> <span class="desc">Server Supabase client (cookie-based)</span></div>
+    <div class="ft-row" style="padding-left:20px"><span class="ft-connector">├──</span> <span class="dir">services/</span></div>
+    <div class="ft-row" style="padding-left:40px"><span class="ft-connector">└──</span> <span class="svc">transactions.ts</span> <span class="desc">All 8 service functions + Zod schemas</span></div>
+    <div class="ft-row" style="padding-left:20px"><span class="ft-connector">└──</span> <span class="cfg">middleware.ts</span> <span class="desc">Auth route protection</span></div>
+  </div>
+
+  <div style="margin-top:8px;display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--text-dim)">
+    <span><span style="color:var(--accent-blue)">&#9632;</span> Directories</span>
+    <span><span style="color:var(--accent-green)">&#9632;</span> Pages/Routes</span>
+    <span><span style="color:var(--accent-purple)">&#9632;</span> Components</span>
+    <span><span style="color:var(--accent-orange)">&#9632;</span> Services/API</span>
+    <span><span style="color:var(--accent-cyan)">&#9632;</span> Config/Lib</span>
+  </div>
+
+  <h3 style="margin:28px 0 12px;font-size:18px">Environment Variables</h3>
+  <div class="table-wrap env-table">
+    <table>
+      <thead><tr><th>Variable</th><th>Purpose</th><th>Required</th></tr></thead>
+      <tbody>
+        <tr><td><code>NEXT_PUBLIC_TAMBO_API_KEY</code></td><td>Tambo AI API key</td><td>Yes</td></tr>
+        <tr><td><code>NEXT_PUBLIC_TAMBO_URL</code></td><td>Custom Tambo server URL (optional for default)</td><td>No</td></tr>
+        <tr><td><code>NEXT_PUBLIC_SUPABASE_URL</code></td><td>Supabase project URL</td><td>Yes</td></tr>
+        <tr><td><code>NEXT_PUBLIC_SUPABASE_ANON_KEY</code></td><td>Supabase anonymous/public key</td><td>Yes</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+</div>
+</div>
+
+<script>
+  // ── Mermaid Init ──
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'dark',
+    themeVariables: {
+      primaryColor: '#1e3a5f',
+      primaryTextColor: '#f1f5f9',
+      primaryBorderColor: '#3b82f6',
+      lineColor: '#64748b',
+      secondaryColor: '#2d1f4e',
+      tertiaryColor: '#1a3a2a',
+      fontFamily: 'Segoe UI, system-ui, sans-serif',
+      fontSize: '14px',
+      noteBkgColor: '#1e293b',
+      noteTextColor: '#f1f5f9',
+      noteBorderColor: '#334155',
+      actorBkg: '#1e3a5f',
+      actorTextColor: '#f1f5f9',
+      actorBorder: '#3b82f6',
+      signalColor: '#94a3b8',
+      signalTextColor: '#f1f5f9',
+      sequenceNumberColor: '#f1f5f9'
+    },
+    flowchart: { curve: 'basis', padding: 16 },
+    sequence: { mirrorActors: false, messageMargin: 40 }
+  });
+
+  // ── Sidebar active tracking ──
+  const sections = document.querySelectorAll('section[id]');
+  const navLinks = document.querySelectorAll('.sidebar a');
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        navLinks.forEach(a => a.classList.remove('active'));
+        const active = document.querySelector(`.sidebar a[href="#${entry.target.id}"]`);
+        if (active) active.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-10% 0px -80% 0px', threshold: 0 });
+
+  sections.forEach(s => observer.observe(s));
+
+  // ── Mobile sidebar toggle ──
+  function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const hamburger = document.getElementById('hamburger');
+    const overlay = document.getElementById('overlay');
+    sidebar.classList.toggle('open');
+    hamburger.classList.toggle('open');
+    overlay.classList.toggle('show');
+  }
+
+  // Close sidebar on nav click (mobile)
+  navLinks.forEach(link => {
+    link.addEventListener('click', () => {
+      if (window.innerWidth < 769) toggleSidebar();
+    });
+  });
+
+  // ── Expand/collapse cards ──
+  function toggleExpand(header) {
+    const body = header.nextElementSibling;
+    const arrow = header.querySelector('.arrow');
+    body.classList.toggle('open');
+    arrow.classList.toggle('open');
+  }
+</script>
+</body>
+</html>

@@ -139,6 +139,80 @@ scripts/
 └── seed.sql                    # Optional sample expense data
 ```
 
+## Architecture
+
+### High-Level Overview
+
+```
+┌─────────────┐     ┌──────────────────────────────────┐     ┌────────────────┐
+│             │     │         Tambo AI Engine           │     │   Supabase     │
+│   User      │────▶│                                  │────▶│                │
+│   (Chat UI) │◀────│  ┌────────────┐  ┌────────────┐  │◀────│  PostgreSQL    │
+│             │     │  │ Registered │  │ Registered │  │     │  + Auth        │
+└─────────────┘     │  │ Components │  │   Tools    │  │     │  + RLS         │
+                    │  └────────────┘  └────────────┘  │     └────────────────┘
+                    └──────────────────────────────────┘
+
+Flow:
+  1. User sends a message in the chat UI
+  2. Tambo AI interprets the message and decides which tools to call
+  3. Tools execute queries against Supabase (read/write expenses, budgets)
+  4. Tambo AI selects a registered component to render the results
+  5. The component (Graph, TransactionList, InsightCard, etc.) appears in the chat
+```
+
+### Tambo AI Integration
+
+**Component Registration** — UI components in `src/components/` are registered in `src/lib/tambo.ts` with Zod schemas defining their props. This lets the AI dynamically render them in the chat:
+
+| Component | Purpose |
+|---|---|
+| `Graph` | Bar, line, and pie charts for spending trends (Recharts) |
+| `BudgetForm` | Interactive form for creating/updating budgets |
+| `InsightCard` | Single metric card with trend indicator |
+| `TransactionList` | Tabular list of expenses |
+| `BudgetOverview` | Progress bars comparing spending vs. budget per category |
+
+**Tool System** — Service functions are registered as tools in `src/lib/tambo.ts` so the AI can invoke them to read and write data:
+
+| Tool | Purpose |
+|---|---|
+| `addExpense` | Create a new expense record |
+| `deleteExpense` | Remove an expense by ID |
+| `getExpenses` | Retrieve expenses with optional category/date filters |
+| `getSpendingInsights` | Analyze totals, averages, and category breakdown |
+| `getSpendingTrends` | Return time-grouped data for chart rendering |
+| `setBudget` | Set or update a per-category budget limit |
+| `deleteBudget` | Remove a budget for a category |
+| `getBudgetOverview` | Compare budgets vs. actual spending per category |
+
+**Provider Pattern** — `TamboProvider` wraps the chat and interactables pages (`src/app/chat/page.tsx`, `src/app/interactables/page.tsx`), supplying the API key, registered components, tools, and context helpers to the component tree.
+
+### Authentication Flow
+
+1. **Supabase Auth** handles email/password sign-up and login
+2. **Middleware** (`src/middleware.ts`) refreshes the auth session on every request and protects `/chat` and `/interactables` routes — unauthenticated users are redirected to `/auth/login`
+3. Two Supabase clients are used:
+   - `src/lib/supabase/client.ts` — browser-side client for client components
+   - `src/lib/supabase/server.ts` — server-side client for server components and actions
+4. **Row Level Security (RLS)** is enabled on all tables, ensuring users can only read, insert, update, and delete their own rows
+
+### Database Schema
+
+| Table | Key Columns | Notes |
+|---|---|---|
+| `profiles` | `id` (uuid, PK, FK → auth.users), `email`, `display_name`, `created_at` | Auto-created on signup via a database trigger |
+| `expenses` | `id` (uuid, PK), `user_id` (FK → profiles), `date`, `description`, `amount`, `category` | Indexed on `user_id`, `(user_id, category)`, and `(user_id, date)` |
+| `budgets` | `id` (uuid, PK), `user_id` (FK → profiles), `category`, `amount`, `created_at`, `updated_at` | Unique constraint on `(user_id, category)` — one budget per category per user |
+
+### State Management
+
+The app uses no global state library. State is managed through:
+
+- **TamboProvider context** — thread state, streaming status, and component registry shared across the chat UI
+- **Tambo hooks** — `useTamboThread` for message/thread management, `useTamboThreadInput` for input handling, `useTamboStreamStatus` for streaming state
+- **Component-level `useState`** — local state within individual components (e.g., form inputs in `BudgetForm`)
+
 ## Deployment
 
 ### Vercel

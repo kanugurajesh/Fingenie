@@ -228,6 +228,36 @@ export async function getSpendingTrends(input: GetSpendingTrendsInput) {
   };
 }
 
+// --- deleteBudget ---
+
+export const deleteBudgetSchema = z.object({
+  category: z.string().describe("The budget category to delete (e.g., 'Food', 'Housing')"),
+});
+
+export const deleteBudgetOutputSchema = z.object({
+  success: z.boolean(),
+  message: z.string(),
+});
+
+export type DeleteBudgetInput = z.infer<typeof deleteBudgetSchema>;
+
+export async function deleteBudget(input: DeleteBudgetInput): Promise<{ success: boolean; message: string }> {
+  const userId = await requireUserId();
+  const supabase = getSupabaseBrowserClient();
+
+  const { error } = await supabase
+    .from("budgets")
+    .delete()
+    .eq("user_id", userId)
+    .eq("category", input.category);
+
+  if (error) {
+    return { success: false, message: `Failed to delete budget: ${error.message}` };
+  }
+
+  return { success: true, message: `Budget for '${input.category}' deleted successfully.` };
+}
+
 // --- setBudget ---
 
 export const setBudgetSchema = z.object({

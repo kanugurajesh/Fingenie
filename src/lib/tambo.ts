@@ -21,6 +21,9 @@ import {
   deleteExpense,
   deleteExpenseSchema,
   deleteExpenseOutputSchema,
+  deleteBudget,
+  deleteBudgetSchema,
+  deleteBudgetOutputSchema,
   getExpenses,
   getExpensesSchema,
   getSpendingInsights,
@@ -102,6 +105,14 @@ export const tools: TamboTool[] = [
     tool: setBudget,
     inputSchema: setBudgetSchema,
     outputSchema: setBudgetOutputSchema,
+  },
+  {
+    name: "deleteBudget",
+    description:
+      "Deletes a budget for a specific category. Use this when the user wants to remove a budget limit for a category.",
+    tool: deleteBudget,
+    inputSchema: deleteBudgetSchema,
+    outputSchema: deleteBudgetOutputSchema,
   },
   {
     name: "getBudgetOverview",

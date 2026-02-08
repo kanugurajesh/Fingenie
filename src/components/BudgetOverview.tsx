@@ -56,7 +56,12 @@ const BudgetOverview: React.FC<BudgetOverviewProps> = ({ budgets = [] }) => {
       return next;
     });
     if (result.success) {
-      setExpenseDeletedCategories((prev) => new Set(prev).add(category));
+      const budget = budgets.find((b) => b.category === category);
+      if (budget && budget.budgetAmount > 0) {
+        setExpenseDeletedCategories((prev) => new Set(prev).add(category));
+      } else {
+        setDeletedCategories((prev) => new Set(prev).add(category));
+      }
     }
   };
 

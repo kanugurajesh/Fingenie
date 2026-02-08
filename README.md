@@ -2,6 +2,39 @@
 
 An AI-powered personal finance assistant built with Next.js, Tambo AI, and Supabase. Track expenses, set budgets, and get spending insights through a conversational chat interface.
 
+## What Can You Do?
+
+Just type naturally in the chat. Here are some example prompts:
+
+**Expense Tracking**
+- "I spent $45 on groceries today"
+- "Add a $15 coffee at Starbucks to the Food category"
+- "Log an electricity bill of $120 to Utilities"
+
+**Budget Management**
+- "Set a budget of $500 for Food"
+- "I want to limit Housing to $1200 a month"
+- "Remove the budget for utilities"
+
+**Spending Insights**
+- "Analyze my spending"
+- "What's my total spending this month?"
+- "What's my top spending category?"
+
+**Visualizations & Trends**
+- "Show me my spending trends"
+- "Show spending by category"
+- "Display expenses from January to March"
+
+**Budget Tracking**
+- "Show me my budget overview"
+- "How am I doing against my budgets?"
+
+**Managing Transactions**
+- "Show me all my transactions"
+- "Show me Food category expenses"
+- "Delete all food expenses"
+
 ## Tech Stack
 
 - **Next.js 15** with App Router

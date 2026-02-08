@@ -67,6 +67,45 @@ export async function deleteExpense(input: DeleteExpenseInput): Promise<{ succes
   return { success: true, message: `Expense deleted successfully.` };
 }
 
+// --- deleteExpensesByCategory ---
+
+export const deleteExpensesByCategorySchema = z.object({
+  category: z.string().describe("The category of expenses to delete (e.g., 'Food', 'Housing')"),
+});
+
+export const deleteExpensesByCategoryOutputSchema = z.object({
+  success: z.boolean(),
+  message: z.string(),
+  deletedCount: z.number(),
+});
+
+export type DeleteExpensesByCategoryInput = z.infer<typeof deleteExpensesByCategorySchema>;
+
+export async function deleteExpensesByCategory(
+  input: DeleteExpensesByCategoryInput
+): Promise<{ success: boolean; message: string; deletedCount: number }> {
+  const userId = await requireUserId();
+  const supabase = getSupabaseBrowserClient();
+
+  const { data, error } = await supabase
+    .from("expenses")
+    .delete()
+    .eq("user_id", userId)
+    .ilike("category", input.category)
+    .select();
+
+  if (error) {
+    return { success: false, message: `Failed to delete expenses: ${error.message}`, deletedCount: 0 };
+  }
+
+  const deletedCount = data?.length ?? 0;
+  return {
+    success: true,
+    message: `Successfully deleted ${deletedCount} expense(s) in '${input.category}'.`,
+    deletedCount,
+  };
+}
+
 // --- getExpenses ---
 
 export const getExpensesSchema = z.object({

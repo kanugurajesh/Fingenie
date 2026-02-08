@@ -21,6 +21,9 @@ import {
   deleteExpense,
   deleteExpenseSchema,
   deleteExpenseOutputSchema,
+  deleteExpensesByCategory,
+  deleteExpensesByCategorySchema,
+  deleteExpensesByCategoryOutputSchema,
   deleteBudget,
   deleteBudgetSchema,
   deleteBudgetOutputSchema,
@@ -69,6 +72,14 @@ export const tools: TamboTool[] = [
     tool: deleteExpense,
     inputSchema: deleteExpenseSchema,
     outputSchema: deleteExpenseOutputSchema,
+  },
+  {
+    name: "deleteExpensesByCategory",
+    description:
+      "Deletes all expenses/transactions in a specific category. Use this when the user wants to clear or remove all expenses for a given category.",
+    tool: deleteExpensesByCategory,
+    inputSchema: deleteExpensesByCategorySchema,
+    outputSchema: deleteExpensesByCategoryOutputSchema,
   },
   {
     name: "getExpenses",

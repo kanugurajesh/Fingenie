@@ -3,7 +3,8 @@
 import React, { useState } from "react";
 import { useTamboStreamStatus } from "@tambo-ai/react";
 import { z } from "zod";
-import { deleteBudget } from "@/services/transactions";
+import { deleteBudget, deleteExpensesByCategory } from "@/services/transactions";
+import ConfirmDeleteDialog from "@/components/ConfirmDeleteDialog";
 
 export const budgetOverviewSchema = z.object({
   budgets: z.array(
@@ -22,6 +23,9 @@ const BudgetOverview: React.FC<BudgetOverviewProps> = ({ budgets = [] }) => {
   const { streamStatus } = useTamboStreamStatus();
   const [deletedCategories, setDeletedCategories] = useState<Set<string>>(new Set());
   const [deletingCategories, setDeletingCategories] = useState<Set<string>>(new Set());
+  const [expenseDeletedCategories, setExpenseDeletedCategories] = useState<Set<string>>(new Set());
+  const [deletingExpensesCategories, setDeletingExpensesCategories] = useState<Set<string>>(new Set());
+  const [confirmDialog, setConfirmDialog] = useState<{ category: string; transactionCount: number } | null>(null);
 
   const handleDelete = async (category: string) => {
     setDeletingCategories((prev) => new Set(prev).add(category));
@@ -33,6 +37,26 @@ const BudgetOverview: React.FC<BudgetOverviewProps> = ({ budgets = [] }) => {
     });
     if (result.success) {
       setDeletedCategories((prev) => new Set(prev).add(category));
+    }
+  };
+
+  const handleDeleteExpenses = (category: string, transactionCount: number) => {
+    setConfirmDialog({ category, transactionCount });
+  };
+
+  const handleConfirmDeleteExpenses = async () => {
+    if (!confirmDialog) return;
+    const { category } = confirmDialog;
+    setDeletingExpensesCategories((prev) => new Set(prev).add(category));
+    setConfirmDialog(null);
+    const result = await deleteExpensesByCategory({ category });
+    setDeletingExpensesCategories((prev) => {
+      const next = new Set(prev);
+      next.delete(category);
+      return next;
+    });
+    if (result.success) {
+      setExpenseDeletedCategories((prev) => new Set(prev).add(category));
     }
   };
 
@@ -64,9 +88,10 @@ const BudgetOverview: React.FC<BudgetOverviewProps> = ({ budgets = [] }) => {
       </h3>
       <div className="space-y-4">
         {visibleBudgets.map((budget, index) => {
-          const actual = budget.actualAmount ?? 0;
+          const expensesCleared = expenseDeletedCategories.has(budget.category);
+          const actual = expensesCleared ? 0 : (budget.actualAmount ?? 0);
           const budgetAmt = budget.budgetAmount ?? 0;
-          const count = budget.transactionCount ?? 0;
+          const count = expensesCleared ? 0 : (budget.transactionCount ?? 0);
           const percentage =
             budgetAmt > 0
               ? (actual / budgetAmt) * 100
@@ -79,9 +104,10 @@ const BudgetOverview: React.FC<BudgetOverviewProps> = ({ budgets = [] }) => {
               : "bg-green-500";
           const cappedWidth = Math.min(percentage, 100);
           const isDeleting = deletingCategories.has(budget.category);
+          const isDeletingExpenses = deletingExpensesCategories.has(budget.category);
 
           return (
-            <div key={`${budget.category}-${index}`} className={isDeleting ? "opacity-50" : ""}>
+            <div key={`${budget.category}-${index}`} className={isDeleting || isDeletingExpenses ? "opacity-50" : ""}>
               <div className="flex justify-between items-center mb-1">
                 <span className="text-sm font-medium text-card-foreground">
                   {budget.category}
@@ -93,6 +119,31 @@ const BudgetOverview: React.FC<BudgetOverviewProps> = ({ budgets = [] }) => {
                       ? ` / $${budgetAmt.toFixed(2)}`
                       : " (no budget set)"}
                   </span>
+                  {count > 0 && (
+                    <button
+                      onClick={() => handleDeleteExpenses(budget.category, count)}
+                      disabled={isDeletingExpenses}
+                      className="text-muted-foreground hover:text-destructive transition-colors disabled:opacity-50"
+                      title={`Delete all ${budget.category} expenses`}
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="14"
+                        height="14"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M11 12H3" />
+                        <path d="M16 6H3" />
+                        <path d="M16 18H3" />
+                        <path d="M19 10L21 12L19 14" />
+                      </svg>
+                    </button>
+                  )}
                   {budgetAmt > 0 && (
                     <button
                       onClick={() => handleDelete(budget.category)}
@@ -148,6 +199,14 @@ const BudgetOverview: React.FC<BudgetOverviewProps> = ({ budgets = [] }) => {
           );
         })}
       </div>
+      <ConfirmDeleteDialog
+        isOpen={confirmDialog !== null}
+        onClose={() => setConfirmDialog(null)}
+        onConfirm={handleConfirmDeleteExpenses}
+        category={confirmDialog?.category ?? ""}
+        transactionCount={confirmDialog?.transactionCount ?? 0}
+        isDeleting={deletingExpensesCategories.size > 0}
+      />
     </div>
   );
 };
